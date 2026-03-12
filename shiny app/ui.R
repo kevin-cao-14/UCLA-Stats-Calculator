@@ -197,7 +197,47 @@ ui <- fluidPage(
     ),
     
     # ======================================================================
-    # TAB 4: One Proportion 
+    # TAB 4: F Distribution
+    # ======================================================================
+    
+    
+    tabPanel(
+      "F Distribution",
+      sidebarLayout(
+        sidebarPanel(
+          selectInput("f_mode", "Select Mode:", 
+                      choices = c("Distribution Calculator" = "f", 
+                                  "Inverse Calculator" = "inverse")),
+          
+          numericInput("f_df1", "Degrees of Freedom (Numerator)", value = 1, min = 1, step = 1),
+          numericInput("f_df2", "Degrees of Freedom (Denominator)", value = 1, min = 1, step = 1),
+          
+          radioButtons("f_range", "Select Range:",
+                       choices = c("Above" = "above", "Below" = "below"),
+                       selected = "below"),
+          
+          conditionalPanel(
+            condition = "input.f_mode == 'f'",
+            uiOutput("f_dynamic_inputs")
+          ),
+          
+          conditionalPanel(
+            condition = "input.f_mode == 'inverse'",
+            numericInput("f_prob_input", "Desired Probability", value = 0.95, step = 0.01)
+          )
+        ),
+        mainPanel(
+          div(style = "margin-top: 20px;", 
+              plotOutput("f_plot")
+          ),
+          textOutput("f_prob"),
+          textOutput("f_threshold_text")
+        )
+      )
+    ),
+    
+    # ======================================================================
+    # TAB 5: One Proportion 
     # ======================================================================
     
     tabPanel("One Proportion",
@@ -289,7 +329,7 @@ ui <- fluidPage(
     ),
     
     # ======================================================================
-    # TAB 5: One Mean
+    # TAB 6: One Mean
     # ======================================================================
     
     tabPanel(
@@ -359,7 +399,7 @@ ui <- fluidPage(
     
     
     # ====================================================================
-    # TAB 6: Difference Two Proportions 
+    # TAB 7: Difference Two Proportions 
     # ====================================================================
     
     tabPanel(
@@ -456,7 +496,7 @@ ui <- fluidPage(
     
     
     # ======================================================================
-    # TAB 7: Difference Two Means
+    # TAB 8: Difference Two Means
     # ======================================================================
     
     tabPanel(
@@ -536,7 +576,7 @@ ui <- fluidPage(
     ),
     
     # ======================================================================
-    # TAB 8: Citation
+    # TAB 9: Citation
     # ======================================================================
     
     tabPanel(

@@ -574,7 +574,102 @@ server <- function(input, output, session) {
   })
   
   # ======================================================================
-  # TAB 4: One Proportion Test
+  # TAB 4: F Distribution
+  # ======================================================================
+  
+  f_debounced_num1 <- debounce(reactive(input$f_num1), 300)
+  
+  f_threshold <- reactiveValues(num1 = 2)
+  f_threshold_locked_by_user <- reactiveVal(FALSE)
+  
+  observeEvent(f_debounced_num1(), {
+    if (!is.null(f_debounced_num1()) && !is.na(f_debounced_num1())) {
+      f_threshold$num1 <- f_debounced_num1()
+      f_threshold_locked_by_user(TRUE)
+    }
+  })
+  
+  output$f_dynamic_inputs <- renderUI({
+    numericInput(
+      "f_num1",
+      "Threshold",
+      value = round(f_threshold$num1, 4),
+      step = 0.01
+    )
+  })
+  
+  f_result <- reactive({
+    req(input$f_df1, input$f_df2, input$f_range, input$f_mode)
+    
+    df1 <- input$f_df1
+    df2 <- input$f_df2
+    range_type <- input$f_range
+    mode <- input$f_mode
+    prob_input <- if (!is.null(input$f_prob_input)) as.numeric(input$f_prob_input) else NA
+    
+    num1 <- if (mode == "f") {
+      if (!is.null(f_debounced_num1())) as.numeric(f_debounced_num1()) else NA
+    } else {
+      if (is.na(prob_input)) return(NULL)
+      if (range_type == "below") {
+        qf(prob_input, df1, df2)
+      } else {
+        qf(1 - prob_input, df1, df2)
+      }
+    }
+    
+    if (mode == "inverse" && !is.na(num1)) {
+      f_threshold$num1 <- num1
+    }
+    
+    x_vals <- seq(0, qf(0.999, df1, df2), length.out = 1000)
+    y_vals <- df(x_vals, df1, df2)
+    df_data <- data.frame(x = x_vals, y = y_vals)
+    
+    prob <- NA
+    shade_df <- data.frame(x = numeric(0), y = numeric(0))
+    
+    if (range_type == "above") {
+      prob <- pf(num1, df1, df2, lower.tail = FALSE)
+      shade_df <- df_data[df_data$x >= num1, ]
+    } else if (range_type == "below") {
+      prob <- pf(num1, df1, df2)
+      shade_df <- df_data[df_data$x <= num1, ]
+    }
+    
+    list(prob = prob, data = df_data, shaded = shade_df, num1 = num1)
+  })
+  
+  output$f_prob <- renderText({
+    res <- f_result()
+    if (is.null(res)) return("Invalid input.")
+    paste0("Probability = ", round(res$prob, 4))
+  })
+  
+  output$f_threshold_text <- renderText({
+    res <- f_result()
+    if (is.null(res)) return("")
+    if (input$f_range == "above") {
+      paste0("Threshold: Above ", round(res$num1, 4))
+    } else {
+      paste0("Threshold: Below ", round(res$num1, 4))
+    }
+  })
+  
+  output$f_plot <- renderPlot({
+    res <- f_result()
+    if (is.null(res)) return(NULL)
+    
+    ggplot(res$data, aes(x, y)) +
+      geom_line(color = "#2774AE", size = 1.2) +
+      labs(title = expression(bold("F Distribution")), x = "X", y = "Density") +
+      theme_minimal() +
+      geom_area(data = res$shaded, aes(x, y), fill = "#2774AE", alpha = 0.5)
+  })
+  
+  
+  # ======================================================================
+  # TAB 5: One Proportion Test
   # ======================================================================
   calc_results <- reactive({
     req(input$n)
@@ -807,7 +902,7 @@ server <- function(input, output, session) {
   })
   
   # ======================================================================
-  # TAB 5: One Mean
+  # TAB 6: One Mean
   # ======================================================================
   
   mean_results <- reactive({
@@ -937,7 +1032,7 @@ server <- function(input, output, session) {
   })
   
   # ======================================================================
-  # TAB 6: Difference Two Proportion
+  # TAB 7: Difference Two Proportion
   # ======================================================================
   
   d2_results <- reactive({
@@ -1101,7 +1196,7 @@ server <- function(input, output, session) {
   })
   
   # ======================================================================
-  # TAB 7: Difference Two Means
+  # TAB 8: Difference Two Means
   # ======================================================================
 
   d2m_results <- reactive({
@@ -1310,7 +1405,7 @@ server <- function(input, output, session) {
   })
   
   # ======================================================================
-  # TAB 8: Citation
+  # TAB 9: Citation
   # ======================================================================
   
   output$copyright <- renderUI({
