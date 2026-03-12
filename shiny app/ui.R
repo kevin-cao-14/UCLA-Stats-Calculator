@@ -209,8 +209,8 @@ ui <- fluidPage(
                       choices = c("Distribution Calculator" = "f", 
                                   "Inverse Calculator" = "inverse")),
           
-          numericInput("f_df1", "Degrees of Freedom (Numerator)", value = 1, min = 1, step = 1),
-          numericInput("f_df2", "Degrees of Freedom (Denominator)", value = 1, min = 1, step = 1),
+          numericInput("f_df1", "Degrees of Freedom (Numerator)", value = 29, min = 1, step = 1),
+          numericInput("f_df2", "Degrees of Freedom (Denominator)", value = 29, min = 1, step = 1),
           
           radioButtons("f_range", "Select Range:",
                        choices = c("Above" = "above", "Below" = "below"),
