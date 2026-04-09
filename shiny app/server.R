@@ -1550,7 +1550,11 @@ server <- function(input, output, session) {
     req(input$cv_dist, input$cv_test_type, input$cv_alpha)
     
     dist      <- input$cv_dist
-    test_type <- input$cv_test_type
+    test_type <- if (input$cv_dist %in% c("chisq", "f")) {
+      input$cv_test_type_chisq
+    } else {
+      input$cv_test_type
+    }    
     alpha     <- as.numeric(input$cv_alpha)
     
     validate(
@@ -1592,7 +1596,7 @@ server <- function(input, output, session) {
     
     
     rejection_region <- if (length(cv) == 2) {
-      sprintf("(-∞, %.4f] ∪ [%.4f, ∞)", cv[1], cv[2])
+      sprintf("(-∞, %.4f] OR [%.4f, ∞)", cv[1], cv[2])
     } else if (test_type == "less") {
       sprintf("(-∞, %.4f]", cv)
     } else {
@@ -1612,7 +1616,6 @@ server <- function(input, output, session) {
     test_type <- res$test_type
     cv        <- res$cv
     
-    # shade boundaries for critical region
     if (dist == "z") {
       x_vals <- seq(-4, 4, length.out = 1000)
       y_vals <- dnorm(x_vals)
@@ -1642,6 +1645,13 @@ server <- function(input, output, session) {
       geom_line(color = "#2774AE", size = 1.2) +
       labs(title = bquote(bold(.(title_str))), x = "Value", y = "Density") +
       theme_minimal()
+    
+    # normal overlay — only shown when t is selected and checkbox is checked
+    if (dist == "t" && isTRUE(input$cv_show_normal_overlay)) {
+      normal_df <- data.frame(x = x_vals, y = dnorm(x_vals))
+      p <- p + geom_line(data = normal_df, aes(x, y),
+                         color = "darkgrey", linetype = "dashed", size = 1.2)
+    }
     
     if (test_type == "less") {
       p <- p + geom_area(data = subset(df_plot, x <= cv[1]),
@@ -1704,7 +1714,7 @@ server <- function(input, output, session) {
   
   output$copyright <- renderUI({
     copy1 <- p("UCLA Stats Calculator is an R Shiny web app that makes critical-value calculations simple and intuitive, while also serving as a general-purpose tool for performing common statistical tests and confidence intervals.")
-    copy2 <- p("Copyright (C) 2025 Tselmen Anuurad, Claudia Chan, Hayley Labia, and Thomas Maierhofer")
+    copy2 <- p("Copyright (C) 2026 Tselmen Anuurad, Claudia Chan, Hayley Labia, Kevin Cao, and Thomas Maierhofer")
     copy3 <- p("This program is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.")
     copy4 <- p("This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.")
     copy5 <- p("You should have received a copy of the GNU General Public License along with this program. If not, see", tags$a(href = "https://www.gnu.org/licenses/", "https://www.gnu.org/licenses/"))
@@ -1715,7 +1725,7 @@ server <- function(input, output, session) {
   
   output$APA <- renderUI({
     apa1 <- p("")
-    apa2 <- p("APA: Anuurad, T., Chan, C., Labia, H., Maierhofer, T. (2025). UCLA Stats Calculator (Version 1.0) [Computer software].", tags$a(href = "https://github.com/tselmena/S25-STATS-199-Shiny-App", "https://github.com/tselmena/S25-STATS-199-Shiny-App"))
+    apa2 <- p("APA: Anuurad, T., Chan, C., Labia, H., Cao, K., Maierhofer, T. (2026). UCLA Stats Calculator (Version 1.0) [Computer software].", tags$a(href = "https://github.com/tselmena/S25-STATS-199-Shiny-App", "https://github.com/tselmena/S25-STATS-199-Shiny-App"))
     apa3 <- p("")
     
     HTML(paste(apa1, apa2, apa3, sep = "<br>"))
@@ -1726,9 +1736,9 @@ server <- function(input, output, session) {
     tag1 <- p("BibTeX:")
     tag2 <- p("@misc{UCLAStatsCalculator,")
     tag3 <- p("title = {UCLA Stats Calculator},", style = "text-indent: 1em;")
-    tag4 <- p("author = {Anuurad, Tselmen and Chan, Claudia and Labia, Hayley and Maierhofer, Thomas},", style = "text-indent: 1em;")
-    tag5 <- p("year = {2025},", style = "text-indent: 1em;")
-    tag6 <- p("version = {1.0},", style = "text-indent: 1em;")
+    tag4 <- p("author = {Anuurad, Tselmen and Chan, Claudia and Labia, Hayley and Cao, Kevin and Maierhofer, Thomas},", style = "text-indent: 1em;")
+    tag5 <- p("year = {2026},", style = "text-indent: 1em;")
+    tag6 <- p("version = {1.1},", style = "text-indent: 1em;")
     tag7 <- p("howpublished = {https://github.com/tselmena/S25-STATS-199-Shiny-App},", style = "text-indent: 1em;")
     tag8 <- p("note = {R Shiny application developed at UCLA; all authors contributed equally; supervised by Thomas Maierhofer}", style = "text-indent: 1em")
     tag9 <- p("}")

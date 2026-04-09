@@ -50,7 +50,54 @@ ui <- fluidPage(
   tabsetPanel(
     
     # ======================================================================
-    # TAB 1: Normal Distribution
+    # TAB 1: Binomial Distribution
+    # ======================================================================
+    
+    tabPanel(
+      "Binomial Distribution",
+      sidebarLayout(
+        sidebarPanel(
+          selectInput("binom_mode", "Select Mode:",
+                      choices = c("Distribution Calculator" = "binom",
+                                  "Inverse Calculator"      = "inverse")),
+          
+          numericInput("binom_n", "Number of trials (n)", value = 20, min = 1, step = 1),
+          numericInput("binom_p", "Probability of success (p)", value = 0.5, min = 0, max = 1, step = 0.01),
+          
+          radioButtons("binom_range", "Select Range:",
+                       choices = c("Above"   = "above",
+                                   "Below"   = "below",
+                                   "Between" = "between",
+                                   "Outside" = "outside"),
+                       selected = "below"),
+          
+          # Distribution mode: show threshold input(s)
+          conditionalPanel(
+            condition = "input.binom_mode == 'binom'",
+            uiOutput("binom_dynamic_inputs")
+          ),
+          
+          # Inverse mode: show desired probability input
+          conditionalPanel(
+            condition = "input.binom_mode == 'inverse' && input.binom_range != 'exactly'",
+            numericInput("binom_prob_input", "Desired Probability", value = 0.95, step = 0.01)
+          )
+        ),
+        
+        mainPanel(
+          div(style = "margin-top: 20px;",
+              plotOutput("binom_plot")
+          ),
+          textOutput("binom_prob"),
+          textOutput("binom_threshold_text")
+        )
+      )
+    ),
+    
+    
+    
+    # ======================================================================
+    # TAB 2: Normal Distribution
     # ======================================================================
     
     tabPanel(
@@ -237,51 +284,7 @@ ui <- fluidPage(
     ),
     
     
-    # ======================================================================
-    # TAB 5: Binomial Distribution
-    # ======================================================================
-    
-    tabPanel(
-      "Binomial Distribution",
-      sidebarLayout(
-        sidebarPanel(
-          selectInput("binom_mode", "Select Mode:",
-                      choices = c("Distribution Calculator" = "binom",
-                                  "Inverse Calculator"      = "inverse")),
-          
-          numericInput("binom_n", "Number of trials (n)", value = 20, min = 1, step = 1),
-          numericInput("binom_p", "Probability of success (p)", value = 0.5, min = 0, max = 1, step = 0.01),
-          
-          radioButtons("binom_range", "Select Range:",
-                       choices = c("Above"   = "above",
-                                   "Below"   = "below",
-                                   "Between" = "between",
-                                   "Outside" = "outside",
-                                   "Exactly" = "exactly"),
-                       selected = "below"),
-          
-          # Distribution mode: show threshold input(s)
-          conditionalPanel(
-            condition = "input.binom_mode == 'binom'",
-            uiOutput("binom_dynamic_inputs")
-          ),
-          
-          # Inverse mode: show desired probability input
-          conditionalPanel(
-            condition = "input.binom_mode == 'inverse' && input.binom_range != 'exactly'",
-            numericInput("binom_prob_input", "Desired Probability", value = 0.95, step = 0.01)
-          )
-        ),
-        
-        mainPanel(
-          div(style = "margin-top: 20px;",
-              plotOutput("binom_plot")
-          ),
-          textOutput("binom_prob"),
-          textOutput("binom_threshold_text")
-        )
-      )
-    ),
+   
     
     # ======================================================================
     # TAB 6: One Proportion 
@@ -641,22 +644,40 @@ ui <- fluidPage(
             )
           ),
           
-          radioButtons(
-            "cv_test_type",
-            "What type of test?",
-            choices = c(
-              "Two-tailed"  = "two.sided",
-              "Left-tailed" = "less",
-              "Right-tailed"= "greater"
-            ),
-            selected = "two.sided"
+          conditionalPanel(
+            condition = "input.cv_dist == 'z' || input.cv_dist == 't'",
+            radioButtons(
+              "cv_test_type",
+              "What type of test?",
+              choices = c(
+                "Two-tailed"  = "two.sided",
+                "Left-tailed" = "less",
+                "Right-tailed"= "greater"
+              ),
+              selected = "two.sided"
+            )
+          ),
+          
+          # test type for chi-square and F (no two-tailed, right-tailed default)
+          conditionalPanel(
+            condition = "input.cv_dist == 'chisq' || input.cv_dist == 'f'",
+            radioButtons(
+              "cv_test_type_chisq",
+              "What type of test?",
+              choices = c(
+                "Left-tailed"  = "less",
+                "Right-tailed" = "greater"
+              ),
+              selected = "greater"
+            )
           ),
           
           # df for t
           conditionalPanel(
             condition = "input.cv_dist == 't'",
             numericInput("cv_df_t", "Degrees of freedom (d)", 
-                         value = 10, min = 1, step = 1)
+                         value = 10, min = 1, step = 1),
+            checkboxInput("cv_show_normal_overlay", "Standard Normal Overlay", value = FALSE)
           ),
           
           # df for chi-square
@@ -676,7 +697,7 @@ ui <- fluidPage(
           ),
           
           numericInput("cv_alpha", "Significance level (α)", 
-                       value = 0.05, min = 0.001, max = 0.999, step = 0.01)
+                       value = 0.05, min = 0, max = 1, step = 0.01)
         ),
         
         mainPanel(
