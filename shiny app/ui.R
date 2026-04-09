@@ -236,8 +236,55 @@ ui <- fluidPage(
       )
     ),
     
+    
     # ======================================================================
-    # TAB 5: One Proportion 
+    # TAB 5: Binomial Distribution
+    # ======================================================================
+    
+    tabPanel(
+      "Binomial Distribution",
+      sidebarLayout(
+        sidebarPanel(
+          selectInput("binom_mode", "Select Mode:",
+                      choices = c("Distribution Calculator" = "binom",
+                                  "Inverse Calculator"      = "inverse")),
+          
+          numericInput("binom_n", "Number of trials (n)", value = 20, min = 1, step = 1),
+          numericInput("binom_p", "Probability of success (p)", value = 0.5, min = 0, max = 1, step = 0.01),
+          
+          radioButtons("binom_range", "Select Range:",
+                       choices = c("Above"   = "above",
+                                   "Below"   = "below",
+                                   "Between" = "between",
+                                   "Outside" = "outside",
+                                   "Exactly" = "exactly"),
+                       selected = "below"),
+          
+          # Distribution mode: show threshold input(s)
+          conditionalPanel(
+            condition = "input.binom_mode == 'binom'",
+            uiOutput("binom_dynamic_inputs")
+          ),
+          
+          # Inverse mode: show desired probability input
+          conditionalPanel(
+            condition = "input.binom_mode == 'inverse' && input.binom_range != 'exactly'",
+            numericInput("binom_prob_input", "Desired Probability", value = 0.95, step = 0.01)
+          )
+        ),
+        
+        mainPanel(
+          div(style = "margin-top: 20px;",
+              plotOutput("binom_plot")
+          ),
+          textOutput("binom_prob"),
+          textOutput("binom_threshold_text")
+        )
+      )
+    ),
+    
+    # ======================================================================
+    # TAB 6: One Proportion 
     # ======================================================================
     
     tabPanel("One Proportion",
@@ -329,7 +376,7 @@ ui <- fluidPage(
     ),
     
     # ======================================================================
-    # TAB 6: One Mean
+    # TAB 7: One Mean
     # ======================================================================
     
     tabPanel(
@@ -399,7 +446,7 @@ ui <- fluidPage(
     
     
     # ====================================================================
-    # TAB 7: Difference Two Proportions 
+    # TAB 8: Difference Two Proportions 
     # ====================================================================
     
     tabPanel(
@@ -496,7 +543,7 @@ ui <- fluidPage(
     
     
     # ======================================================================
-    # TAB 8: Difference Two Means
+    # TAB 9: Difference Two Means
     # ======================================================================
     
     tabPanel(
@@ -576,7 +623,75 @@ ui <- fluidPage(
     ),
     
     # ======================================================================
-    # TAB 9: Citation
+    # TAB 10: Critical Value Calculator
+    # ======================================================================
+
+    tabPanel(
+      "Critical Value Calculator",
+      sidebarLayout(
+        sidebarPanel(
+          selectInput(
+            "cv_dist",
+            "What distribution?",
+            choices = c(
+              "Z (standard normal)" = "z",
+              "t-Student"           = "t",
+              "χ² (chi-square)"     = "chisq",
+              "F (Fisher-Snedecor)" = "f"
+            )
+          ),
+          
+          radioButtons(
+            "cv_test_type",
+            "What type of test?",
+            choices = c(
+              "Two-tailed"  = "two.sided",
+              "Left-tailed" = "less",
+              "Right-tailed"= "greater"
+            ),
+            selected = "two.sided"
+          ),
+          
+          # df for t
+          conditionalPanel(
+            condition = "input.cv_dist == 't'",
+            numericInput("cv_df_t", "Degrees of freedom (d)", 
+                         value = 10, min = 1, step = 1)
+          ),
+          
+          # df for chi-square
+          conditionalPanel(
+            condition = "input.cv_dist == 'chisq'",
+            numericInput("cv_df_chisq", "Degrees of freedom (d)", 
+                         value = 10, min = 1, step = 1)
+          ),
+          
+          # df1 and df2 for F
+          conditionalPanel(
+            condition = "input.cv_dist == 'f'",
+            numericInput("cv_df1_f", "Degrees of freedom – numerator (d₁)", 
+                         value = 10, min = 1, step = 1),
+            numericInput("cv_df2_f", "Degrees of freedom – denominator (d₂)", 
+                         value = 10, min = 1, step = 1)
+          ),
+          
+          numericInput("cv_alpha", "Significance level (α)", 
+                       value = 0.05, min = 0.001, max = 0.999, step = 0.01)
+        ),
+        
+        mainPanel(
+          div(style = "margin-top: 20px;",
+              plotOutput("cv_plot")
+          ),
+          div(style = "margin-top: 15px; width: fit-content;",
+              gt_output("cv_table")
+          )
+        )
+      )
+    ),
+    
+    # ======================================================================
+    # TAB 11: Citation
     # ======================================================================
     
     tabPanel(

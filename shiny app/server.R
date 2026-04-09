@@ -667,9 +667,146 @@ server <- function(input, output, session) {
       geom_area(data = res$shaded, aes(x, y), fill = "#2774AE", alpha = 0.5)
   })
   
+  # ======================================================================
+  # TAB 5: Binomial Distribution
+  # ======================================================================
+  
+  output$binom_dynamic_inputs <- renderUI({
+    req(input$binom_n)
+    n <- input$binom_n
+    
+    if (input$binom_range %in% c("between", "outside")) {
+      tagList(
+        numericInput("binom_k1", "Lower value (k₁)", value = 5, min = 0, max = n, step = 1),
+        numericInput("binom_k2", "Upper value (k₂)", value = 10, min = 0, max = n, step = 1)
+      )
+    } else {
+      numericInput("binom_k1", "Value (k)", value = 10, min = 0, max = n, step = 1)
+    }
+  })
+  
+  binom_result <- reactive({
+    req(input$binom_n, input$binom_p, input$binom_range, input$binom_mode)
+    
+    n          <- as.integer(input$binom_n)
+    p          <- as.numeric(input$binom_p)
+    range_type <- input$binom_range
+    mode       <- input$binom_mode
+    
+    validate(
+      need(n >= 1,        "Number of trials must be at least 1."),
+      need(p >= 0 & p <= 1, "Probability must be between 0 and 1.")
+    )
+    
+    prob_input <- if (!is.null(input$binom_prob_input)) as.numeric(input$binom_prob_input) else NA
+    
+    # --- Inverse mode: find k from desired probability ---
+    k1 <- k2 <- NA
+    
+    if (mode == "inverse") {
+      if (range_type == "below") {
+        k1 <- qbinom(prob_input, n, p)
+      } else if (range_type == "above") {
+        k1 <- qbinom(1 - prob_input, n, p)
+      } else if (range_type == "between") {
+        tail <- (1 - prob_input) / 2
+        k1 <- qbinom(tail, n, p)
+        k2 <- qbinom(1 - tail, n, p)
+      } else if (range_type == "outside") {
+        tail <- prob_input / 2
+        k1 <- qbinom(tail, n, p)
+        k2 <- qbinom(1 - tail, n, p)
+      }
+    } else {
+      k1 <- if (!is.null(input$binom_k1)) as.integer(input$binom_k1) else NA
+      k2 <- if (!is.null(input$binom_k2)) as.integer(input$binom_k2) else NA
+    }
+    
+    # --- Validate k values ---
+    if (range_type %in% c("between", "outside")) {
+      validate(need(!is.na(k1) & !is.na(k2), "Please enter both values."))
+      validate(need(k2 >= k1, "Upper value must be ≥ lower value."))
+    } else {
+      validate(need(!is.na(k1), "Please enter a value."))
+    }
+    
+    # --- Compute probability ---
+    prob <- switch(range_type,
+                   "below"   = pbinom(k1, n, p),
+                   "above"   = pbinom(k1 - 1, n, p, lower.tail = FALSE),
+                   "exactly" = dbinom(k1, n, p),
+                   "between" = pbinom(k2, n, p) - pbinom(k1 - 1, n, p),
+                   "outside" = 1 - (pbinom(k2, n, p) - pbinom(k1 - 1, n, p))
+    )
+    
+    # --- Build bar colors ---
+    x_vals  <- 0:n
+    bar_col <- rep("lightgrey", length(x_vals))
+    
+    if (range_type == "below") {
+      bar_col[x_vals <= k1] <- "#2774AE"
+    } else if (range_type == "above") {
+      bar_col[x_vals >= k1] <- "#2774AE"
+    } else if (range_type == "exactly") {
+      bar_col[x_vals == k1] <- "#2774AE"
+    } else if (range_type == "between") {
+      bar_col[x_vals >= k1 & x_vals <= k2] <- "#2774AE"
+    } else if (range_type == "outside") {
+      bar_col[x_vals < k1 | x_vals > k2] <- "#2774AE"
+    }
+    
+    list(prob = prob, n = n, p = p, k1 = k1, k2 = k2,
+         x_vals = x_vals, bar_col = bar_col)
+  })
+  
+  output$binom_plot <- renderPlot({
+    res <- binom_result()
+    if (is.null(res)) return(NULL)
+    
+    probs <- dbinom(res$x_vals, res$n, res$p)
+    
+    # trim display to ±4 SD around mean
+    mu    <- res$n * res$p
+    sigma <- sqrt(res$n * res$p * (1 - res$p))
+    lower <- max(0,      floor(mu - 4 * sigma))
+    upper <- min(res$n, ceiling(mu + 4 * sigma))
+    
+    df_plot <- data.frame(x = res$x_vals, prob = probs, color = res$bar_col)
+    
+    ggplot(df_plot, aes(x = x, y = prob, fill = color)) +
+      geom_col(color = "#2774AE") +
+      scale_x_continuous(limits = c(lower - 0.5, upper + 0.5),
+                         breaks = scales::pretty_breaks(n = 10)) +
+      scale_fill_identity() +
+      labs(title = expression(bold("Binomial Distribution")),
+           x = "Number of Successes (k)", y = "Probability") +
+      theme_minimal()
+  })
+  
+  output$binom_prob <- renderText({
+    res <- binom_result()
+    if (is.null(res)) return("")
+    paste0("Probability = ", round(res$prob, 4))
+  })
+  
+  output$binom_threshold_text <- renderText({
+    res <- binom_result()
+    if (is.null(res)) return("")
+    
+    switch(input$binom_range,
+           "below"   = paste0("P(X ≤ ", res$k1, ")"),
+           "above"   = paste0("P(X ≥ ", res$k1, ")"),
+           "exactly" = paste0("P(X = ", res$k1, ")"),
+           "between" = paste0("P(", res$k1, " ≤ X ≤ ", res$k2, ")"),
+           "outside" = paste0("P(X < ", res$k1, " or X > ", res$k2, ")")
+    )
+  })
+  
+  
+  
   
   # ======================================================================
-  # TAB 5: One Proportion Test
+  # TAB 6: One Proportion Test
   # ======================================================================
   calc_results <- reactive({
     req(input$n)
@@ -902,7 +1039,7 @@ server <- function(input, output, session) {
   })
   
   # ======================================================================
-  # TAB 6: One Mean
+  # TAB 7: One Mean
   # ======================================================================
   
   mean_results <- reactive({
@@ -1032,7 +1169,7 @@ server <- function(input, output, session) {
   })
   
   # ======================================================================
-  # TAB 7: Difference Two Proportion
+  # TAB 8: Difference Two Proportion
   # ======================================================================
   
   d2_results <- reactive({
@@ -1196,7 +1333,7 @@ server <- function(input, output, session) {
   })
   
   # ======================================================================
-  # TAB 8: Difference Two Means
+  # TAB 9: Difference Two Means
   # ======================================================================
 
   d2m_results <- reactive({
@@ -1404,8 +1541,165 @@ server <- function(input, output, session) {
     p
   })
   
+  
   # ======================================================================
-  # TAB 9: Citation
+  # TAB 10: Critical Value Calculator
+  # ======================================================================
+  
+  cv_result <- reactive({
+    req(input$cv_dist, input$cv_test_type, input$cv_alpha)
+    
+    dist      <- input$cv_dist
+    test_type <- input$cv_test_type
+    alpha     <- as.numeric(input$cv_alpha)
+    
+    validate(
+      need(alpha > 0 && alpha < 1, "Significance level must be between 0 and 1.")
+    )
+    
+    cv <- switch(dist,
+                 
+                 "z" = {
+                   if (test_type == "less")      qnorm(alpha)
+                   else if (test_type == "greater") qnorm(1 - alpha)
+                   else c(qnorm(alpha / 2), qnorm(1 - alpha / 2))
+                 },
+                 
+                 "t" = {
+                   req(input$cv_df_t)
+                   df <- input$cv_df_t
+                   if (test_type == "less")         qt(alpha, df)
+                   else if (test_type == "greater") qt(1 - alpha, df)
+                   else c(qt(alpha / 2, df), qt(1 - alpha / 2, df))
+                 },
+                 
+                 "chisq" = {
+                   req(input$cv_df_chisq)
+                   df <- input$cv_df_chisq
+                   if (test_type == "less")         qchisq(alpha, df)
+                   else if (test_type == "greater") qchisq(1 - alpha, df)
+                   else c(qchisq(alpha / 2, df), qchisq(1 - alpha / 2, df))
+                 },
+                 
+                 "f" = {
+                   req(input$cv_df1_f, input$cv_df2_f)
+                   df1 <- input$cv_df1_f; df2 <- input$cv_df2_f
+                   if (test_type == "less")         qf(alpha, df1, df2)
+                   else if (test_type == "greater") qf(1 - alpha, df1, df2)
+                   else c(qf(alpha / 2, df1, df2), qf(1 - alpha / 2, df1, df2))
+                 }
+    )
+    
+    
+    rejection_region <- if (length(cv) == 2) {
+      sprintf("(-∞, %.4f] ∪ [%.4f, ∞)", cv[1], cv[2])
+    } else if (test_type == "less") {
+      sprintf("(-∞, %.4f]", cv)
+    } else {
+      sprintf("[%.4f, ∞)", cv)
+    }
+    
+    list(cv = cv, rejection_region = rejection_region, dist = dist,
+         test_type = test_type, alpha = alpha)
+  })
+  
+  # plot
+  output$cv_plot <- renderPlot({
+    res <- cv_result()
+    if (is.null(res)) return(NULL)
+    
+    dist      <- res$dist
+    test_type <- res$test_type
+    cv        <- res$cv
+    
+    # shade boundaries for critical region
+    if (dist == "z") {
+      x_vals <- seq(-4, 4, length.out = 1000)
+      y_vals <- dnorm(x_vals)
+      title_str <- "Z (Standard Normal) Distribution"
+    } else if (dist == "t") {
+      df <- input$cv_df_t
+      x_vals <- seq(-5, 5, length.out = 1000)
+      y_vals <- dt(x_vals, df)
+      title_str <- paste0("t-Distribution (df = ", df, ")")
+    } else if (dist == "chisq") {
+      df <- input$cv_df_chisq
+      x_max <- qchisq(0.999, df)
+      x_vals <- seq(0, x_max, length.out = 1000)
+      y_vals <- dchisq(x_vals, df)
+      title_str <- paste0("Chi-square Distribution (df = ", df, ")")
+    } else {
+      df1 <- input$cv_df1_f; df2 <- input$cv_df2_f
+      x_max <- qf(0.999, df1, df2)
+      x_vals <- seq(0, x_max, length.out = 1000)
+      y_vals <- df(x_vals, df1, df2)
+      title_str <- paste0("F Distribution (df₁ = ", df1, ", df₂ = ", df2, ")")
+    }
+    
+    df_plot <- data.frame(x = x_vals, y = y_vals)
+    
+    p <- ggplot(df_plot, aes(x, y)) +
+      geom_line(color = "#2774AE", size = 1.2) +
+      labs(title = bquote(bold(.(title_str))), x = "Value", y = "Density") +
+      theme_minimal()
+    
+    if (test_type == "less") {
+      p <- p + geom_area(data = subset(df_plot, x <= cv[1]),
+                         aes(x, y), fill = "#2774AE", alpha = 0.5)
+    } else if (test_type == "greater") {
+      p <- p + geom_area(data = subset(df_plot, x >= cv[1]),
+                         aes(x, y), fill = "#2774AE", alpha = 0.5)
+    } else {
+      p <- p +
+        geom_area(data = subset(df_plot, x <= cv[1]),
+                  aes(x, y), fill = "#2774AE", alpha = 0.5) +
+        geom_area(data = subset(df_plot, x >= cv[2]),
+                  aes(x, y), fill = "#2774AE", alpha = 0.5)
+    }
+    
+    p
+  })
+  
+  # results table
+  output$cv_table <- render_gt({
+    res <- cv_result()
+    if (is.null(res)) return(NULL)
+    
+    cv        <- res$cv
+    test_type <- res$test_type
+    
+    cv_str <- if (length(cv) == 2) {
+      paste0(round(cv[1], 4), " and ", round(cv[2], 4))
+    } else {
+      as.character(round(cv[1], 4))
+    }
+    
+    test_label <- switch(test_type,
+                         "two.sided" = "Two-tailed",
+                         "less"      = "Left-tailed",
+                         "greater"   = "Right-tailed"
+    )
+    
+    dist_label <- switch(res$dist,
+                         "z"     = "Z (standard normal)",
+                         "t"     = paste0("t-Student (df = ", input$cv_df_t, ")"),
+                         "chisq" = paste0("χ² (df = ", input$cv_df_chisq, ")"),
+                         "f"     = paste0("F (df₁ = ", input$cv_df1_f, ", df₂ = ", input$cv_df2_f, ")")
+    )
+    
+    data.frame(
+      label = c("Distribution", "Test type", "Significance level (α)",
+                "Critical value(s)", "Rejection region"),
+      value = c(dist_label, test_label, res$alpha, cv_str, res$rejection_region)
+    ) |>
+      gt() |>
+      tab_header(title = "Critical Value") |>
+      tab_options(column_labels.hidden = TRUE, table.width = pct(100))
+  })
+  
+  
+  # ======================================================================
+  # TAB 11: Citation
   # ======================================================================
   
   output$copyright <- renderUI({
