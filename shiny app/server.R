@@ -1728,7 +1728,7 @@ server <- function(input, output, session) {
   
   output$APA <- renderUI({
     apa1 <- p("")
-    apa2 <- p("APA: Anuurad, T., Chan, C., Labia, H., Cao, K., Maierhofer, T. (2026). UCLA Stats Calculator (Version 1.0) [Computer software].", tags$a(href = "https://github.com/tselmena/S25-STATS-199-Shiny-App", "https://github.com/tselmena/S25-STATS-199-Shiny-App"))
+    apa2 <- p("APA: Anuurad, T., Chan, C., Labia, H., Cao, K., Maierhofer, T. (2026). UCLA Stats Calculator (Version 1.1) [Computer software].", tags$a(href = "https://github.com/tselmena/S25-STATS-199-Shiny-App", "https://github.com/tselmena/S25-STATS-199-Shiny-App"))
     apa3 <- p("")
     
     HTML(paste(apa1, apa2, apa3, sep = "<br>"))

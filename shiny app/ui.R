@@ -59,8 +59,8 @@ ui <- fluidPage(
       sidebarLayout(
         sidebarPanel(
           selectInput("binom_mode", "Select Mode:",
-                      choices = c("Distribution Calculator" = "binom",
-                                  "Inverse Calculator"      = "inverse")),
+                      choices = c("Probability Calculator" = "binom",
+                                  "Threshold Calculator"      = "inverse")),
           
           numericInput("binom_n", "Number of trials (n)", value = 20, min = 1, step = 1),
           numericInput("binom_p", "Probability of success (p)", value = 0.5, min = 0, max = 1, step = 0.01),
@@ -106,8 +106,8 @@ ui <- fluidPage(
       sidebarLayout(
         sidebarPanel(
           selectInput("mode", "Select Mode:", 
-                      choices = c("Distribution Calculator" = "normal", 
-                                  "Inverse Calculator" = "inverse")),
+                      choices = c("Probability Calculator" = "normal", 
+                                  "Threshold Calculator" = "inverse")),
           
           numericInput("mean", "Mean", value = 0, step = 0.01),
           numericInput("sd", "Standard Deviation", value = 1, step = 0.01),
@@ -160,8 +160,8 @@ ui <- fluidPage(
           checkboxInput("show_normal_overlay", "Standard Normal Overlay", value = FALSE),
           
           selectInput("t_mode", "Select Mode:", 
-                      choices = c("Distribution Calculator" = "t", 
-                                  "Inverse Calculator" = "inverse")),
+                      choices = c("Probability Calculator" = "t", 
+                                  "Threshold Calculator" = "inverse")),
           
           numericInput("df", "Degrees of Freedom (n - 1)", value = 29, step = 1, min = 1),
           
@@ -211,8 +211,8 @@ ui <- fluidPage(
       sidebarLayout(
         sidebarPanel(
           selectInput("chisq_mode", "Select Mode:", 
-                      choices = c("Distribution Calculator" = "chisq", 
-                                  "Inverse Calculator" = "inverse")),
+                      choices = c("Probability Calculator" = "chisq", 
+                                  "Threshold Calculator" = "inverse")),
           
           numericInput("chisq_df", "Degrees of Freedom", value = 1, min = 1, step = 1),
           
@@ -254,8 +254,8 @@ ui <- fluidPage(
       sidebarLayout(
         sidebarPanel(
           selectInput("f_mode", "Select Mode:", 
-                      choices = c("Distribution Calculator" = "f", 
-                                  "Inverse Calculator" = "inverse")),
+                      choices = c("Probability Calculator" = "f", 
+                                  "Threshold Calculator" = "inverse")),
           
           numericInput("f_df1", "Degrees of Freedom (Numerator)", value = 29, min = 1, step = 1),
           numericInput("f_df2", "Degrees of Freedom (Denominator)", value = 29, min = 1, step = 1),
