@@ -1,11 +1,151 @@
 # server.R =====================================================================
 
 server <- function(input, output, session) {
-  
+  fmt_num <- function(x, digits = 4) {
+    formatC(as.numeric(x), format = "f", digits = digits)
+  }
   shinyalert("UCLA Stats Calculator", "This program comes with ABSOLUTELY NO WARRANTY; for details, see the 'Citation' tab. This is free software, and you are welcome to redistribute it under certain conditions; for details, see the 'Citation' tab.", type = "info")
   
+  
   # ======================================================================
-  # TAB 1: Normal Distribution
+  # TAB 1: Binomial Distribution
+  # ======================================================================
+  
+  output$binom_dynamic_inputs <- renderUI({
+    req(input$binom_n)
+    n <- input$binom_n
+    
+    if (input$binom_range %in% c("between", "outside")) {
+      tagList(
+        numericInput("binom_k1", "Lower value (k₁)", value = 5, min = 0, max = n, step = 1),
+        numericInput("binom_k2", "Upper value (k₂)", value = 10, min = 0, max = n, step = 1)
+      )
+    } else {
+      numericInput("binom_k1", "Value (k)", value = 10, min = 0, max = n, step = 1)
+    }
+  })
+  
+  binom_result <- reactive({
+    req(input$binom_n, input$binom_p, input$binom_range, input$binom_mode)
+    
+    n          <- as.integer(input$binom_n)
+    p          <- as.numeric(input$binom_p)
+    range_type <- input$binom_range
+    mode       <- input$binom_mode
+    
+    validate(
+      need(n >= 1,        "Number of trials must be at least 1."),
+      need(p >= 0 & p <= 1, "Probability must be between 0 and 1.")
+    )
+    
+    prob_input <- if (!is.null(input$binom_prob_input)) as.numeric(input$binom_prob_input) else NA
+    
+    # --- Inverse mode: find k from desired probability ---
+    k1 <- k2 <- NA
+    
+    if (mode == "inverse") {
+      if (range_type == "below") {
+        k1 <- qbinom(prob_input, n, p)
+      } else if (range_type == "above") {
+        k1 <- qbinom(1 - prob_input, n, p)
+      } else if (range_type == "between") {
+        tail <- (1 - prob_input) / 2
+        k1 <- qbinom(tail, n, p)
+        k2 <- qbinom(1 - tail, n, p)
+      } else if (range_type == "outside") {
+        tail <- prob_input / 2
+        k1 <- qbinom(tail, n, p)
+        k2 <- qbinom(1 - tail, n, p)
+      }
+    } else {
+      k1 <- if (!is.null(input$binom_k1)) as.integer(input$binom_k1) else NA
+      k2 <- if (!is.null(input$binom_k2)) as.integer(input$binom_k2) else NA
+    }
+    
+    # --- Validate k values ---
+    if (range_type %in% c("between", "outside")) {
+      validate(need(!is.na(k1) & !is.na(k2), "Please enter both values."))
+      validate(need(k2 >= k1, "Upper value must be ≥ lower value."))
+    } else {
+      validate(need(!is.na(k1), "Please enter a value."))
+    }
+    
+    # --- Compute probability ---
+    prob <- switch(range_type,
+                   "below"   = pbinom(k1, n, p),
+                   "above"   = pbinom(k1 - 1, n, p, lower.tail = FALSE),
+                   "exactly" = dbinom(k1, n, p),
+                   "between" = pbinom(k2, n, p) - pbinom(k1 - 1, n, p),
+                   "outside" = 1 - (pbinom(k2, n, p) - pbinom(k1 - 1, n, p))
+    )
+    
+    # --- Build bar colors ---
+    x_vals  <- 0:n
+    bar_col <- rep("lightgrey", length(x_vals))
+    
+    if (range_type == "below") {
+      bar_col[x_vals <= k1] <- "#2774AE"
+    } else if (range_type == "above") {
+      bar_col[x_vals >= k1] <- "#2774AE"
+    } else if (range_type == "exactly") {
+      bar_col[x_vals == k1] <- "#2774AE"
+    } else if (range_type == "between") {
+      bar_col[x_vals >= k1 & x_vals <= k2] <- "#2774AE"
+    } else if (range_type == "outside") {
+      bar_col[x_vals < k1 | x_vals > k2] <- "#2774AE"
+    }
+    
+    list(prob = prob, n = n, p = p, k1 = k1, k2 = k2,
+         x_vals = x_vals, bar_col = bar_col)
+  })
+  
+  output$binom_plot <- renderPlot({
+    res <- binom_result()
+    if (is.null(res)) return(NULL)
+    
+    probs <- dbinom(res$x_vals, res$n, res$p)
+    
+    # trim display to ±4 SD around mean
+    mu    <- res$n * res$p
+    sigma <- sqrt(res$n * res$p * (1 - res$p))
+    lower <- max(0,      floor(mu - 4 * sigma))
+    upper <- min(res$n, ceiling(mu + 4 * sigma))
+    
+    df_plot <- data.frame(x = res$x_vals, prob = probs, color = res$bar_col)
+    
+    ggplot(df_plot, aes(x = x, y = prob, fill = color)) +
+      geom_col(color = "#2774AE") +
+      scale_x_continuous(limits = c(lower - 0.5, upper + 0.5),
+                         breaks = seq(lower, upper, by = 1)) +
+      scale_fill_identity() +
+      labs(title = expression(bold("Binomial Distribution")),
+           x = "Number of Successes (k)", y = "Probability") +
+      theme_minimal()
+  })
+  
+  output$binom_prob <- renderText({
+    res <- binom_result()
+    if (is.null(res)) return("")
+    paste0("Probability = ", fmt_num(res$prob))
+  })
+  
+  output$binom_threshold_text <- renderText({
+    res <- binom_result()
+    if (is.null(res)) return("")
+    
+    switch(input$binom_range,
+           "below"   = paste0("P(X ≤ ", res$k1, ")"),
+           "above"   = paste0("P(X ≥ ", res$k1, ")"),
+           "exactly" = paste0("P(X = ", res$k1, ")"),
+           "between" = paste0("P(", res$k1, " ≤ X ≤ ", res$k2, ")"),
+           "outside" = paste0("P(X < ", res$k1, " or X > ", res$k2, ")")
+    )
+  })
+  
+  
+  
+  # ======================================================================
+  # TAB 2: Normal Distribution
   # ======================================================================
   
   debounced_num1 <- debounce(reactive(input$num1), 300)
@@ -200,21 +340,21 @@ server <- function(input, output, session) {
     res <- norm_result()
     if (is.null(res)) return("")
     if (!is.null(res$error)) return(res$error)
-    paste0("Probability = ", round(res$prob, 4))
-  })
+    paste0("Probability = ", fmt_num(res$prob))
+    })
   
   output$threshold_text <- renderText({
     res <- norm_result()
     if (is.null(res)) return("")
     if (!is.null(res$error)) return("")
     if (input$range == "above") {
-      paste0("Threshold: Above ", round(res$num1, 4))
+      paste0("Threshold: Above ", fmt_num(res$num1))
     } else if (input$range == "below") {
-      paste0("Threshold: Below ", round(res$num1, 4))
+      paste0("Threshold: Below ", fmt_num(res$num1))
     } else if (input$range == "between") {
-      paste0("Threshold: Between ", round(res$num1, 4), " and ", round(res$num2, 4))
+      paste0("Threshold: Between ", fmt_num(res$num1), " and ", fmt_num(res$num2))
     } else if (input$range == "outside") {
-      paste0("Threshold: Outside ", round(res$num1, 4), " and ", round(res$num2, 4))
+      paste0("Threshold: Outside ", fmt_num(res$num1), " and ", fmt_num(res$num2))
     }
   })
   
@@ -241,7 +381,7 @@ server <- function(input, output, session) {
   })
   
   # ======================================================================
-  # TAB 2: t-Distribution
+  # TAB 3: t-Distribution
   # ======================================================================
   
   t_debounced_num1 <- debounce(reactive(input$t_num1), 300)
@@ -432,7 +572,7 @@ server <- function(input, output, session) {
     res <- t_result()
     if (is.null(res)) return("")
     if (!is.null(res$error)) return(res$error)
-    paste0("Probability = ", round(res$prob, 4))
+    paste0("Probability = ", fmt_num(res$prob))
   })
   
   output$t_threshold_text <- renderText({
@@ -440,13 +580,13 @@ server <- function(input, output, session) {
     if (is.null(res)) return("")
     if (!is.null(res$error)) return("")
     if (input$t_range == "above") {
-      paste0("Threshold: Above ", round(res$num1, 4))
+      paste0("Threshold: Above ", fmt_num(res$num1))
     } else if (input$t_range == "below") {
-      paste0("Threshold: Below ", round(res$num1, 4))
+      paste0("Threshold: Below ", fmt_num(res$num1))
     } else if (input$t_range == "between") {
-      paste0("Threshold: Between ", round(res$num1, 4), " and ", round(res$num2, 4))
+      paste0("Threshold: Between ", fmt_num(res$num1), " and ", fmt_num(res$num2))
     } else if (input$t_range == "outside") {
-      paste0("Threshold: Outside ", round(res$num1, 4), " and ", round(res$num2, 4))
+      paste0("Threshold: Outside ", fmt_num(res$num1), " and ", fmt_num(res$num2))
     }
   })
   
@@ -482,7 +622,7 @@ server <- function(input, output, session) {
   })
   
   # ======================================================================
-  # TAB 3: Chi-square
+  # TAB 4: Chi-square
   # ======================================================================
   
   chisq_debounced_num1 <- debounce(reactive(input$chisq_num1), 300)
@@ -549,16 +689,16 @@ server <- function(input, output, session) {
   output$chisq_prob <- renderText({
     res <- chisq_result()
     if (is.null(res)) return("Invalid input.")
-    paste0("Probability = ", round(res$prob, 4))
+    paste0("Probability = ", fmt_num(res$prob))
   })
   
   output$chisq_threshold_text <- renderText({
     res <- chisq_result()
     if (is.null(res)) return("")
     if (input$chisq_range == "above") {
-      paste0("Threshold: Above ", round(res$num1, 4))
+      paste0("Threshold: Above ", fmt_num(res$num1))
     } else {
-      paste0("Threshold: Below ", round(res$num1, 4))
+      paste0("Threshold: Below ", fmt_num(res$num1))
     }
   })
   
@@ -574,7 +714,7 @@ server <- function(input, output, session) {
   })
   
   # ======================================================================
-  # TAB 4: F Distribution
+  # TAB 5: F Distribution
   # ======================================================================
   
   f_debounced_num1 <- debounce(reactive(input$f_num1), 300)
@@ -643,16 +783,16 @@ server <- function(input, output, session) {
   output$f_prob <- renderText({
     res <- f_result()
     if (is.null(res)) return("Invalid input.")
-    paste0("Probability = ", round(res$prob, 4))
+    paste0("Probability = ", fmt_num(res$prob))
   })
   
   output$f_threshold_text <- renderText({
     res <- f_result()
     if (is.null(res)) return("")
     if (input$f_range == "above") {
-      paste0("Threshold: Above ", round(res$num1, 4))
+      paste0("Threshold: Above ", fmt_num(res$num1))
     } else {
-      paste0("Threshold: Below ", round(res$num1, 4))
+      paste0("Threshold: Below ", fmt_num(res$num1))
     }
   })
   
@@ -666,143 +806,6 @@ server <- function(input, output, session) {
       theme_minimal() +
       geom_area(data = res$shaded, aes(x, y), fill = "#2774AE", alpha = 0.5)
   })
-  
-  # ======================================================================
-  # TAB 5: Binomial Distribution
-  # ======================================================================
-  
-  output$binom_dynamic_inputs <- renderUI({
-    req(input$binom_n)
-    n <- input$binom_n
-    
-    if (input$binom_range %in% c("between", "outside")) {
-      tagList(
-        numericInput("binom_k1", "Lower value (k₁)", value = 5, min = 0, max = n, step = 1),
-        numericInput("binom_k2", "Upper value (k₂)", value = 10, min = 0, max = n, step = 1)
-      )
-    } else {
-      numericInput("binom_k1", "Value (k)", value = 10, min = 0, max = n, step = 1)
-    }
-  })
-  
-  binom_result <- reactive({
-    req(input$binom_n, input$binom_p, input$binom_range, input$binom_mode)
-    
-    n          <- as.integer(input$binom_n)
-    p          <- as.numeric(input$binom_p)
-    range_type <- input$binom_range
-    mode       <- input$binom_mode
-    
-    validate(
-      need(n >= 1,        "Number of trials must be at least 1."),
-      need(p >= 0 & p <= 1, "Probability must be between 0 and 1.")
-    )
-    
-    prob_input <- if (!is.null(input$binom_prob_input)) as.numeric(input$binom_prob_input) else NA
-    
-    # --- Inverse mode: find k from desired probability ---
-    k1 <- k2 <- NA
-    
-    if (mode == "inverse") {
-      if (range_type == "below") {
-        k1 <- qbinom(prob_input, n, p)
-      } else if (range_type == "above") {
-        k1 <- qbinom(1 - prob_input, n, p)
-      } else if (range_type == "between") {
-        tail <- (1 - prob_input) / 2
-        k1 <- qbinom(tail, n, p)
-        k2 <- qbinom(1 - tail, n, p)
-      } else if (range_type == "outside") {
-        tail <- prob_input / 2
-        k1 <- qbinom(tail, n, p)
-        k2 <- qbinom(1 - tail, n, p)
-      }
-    } else {
-      k1 <- if (!is.null(input$binom_k1)) as.integer(input$binom_k1) else NA
-      k2 <- if (!is.null(input$binom_k2)) as.integer(input$binom_k2) else NA
-    }
-    
-    # --- Validate k values ---
-    if (range_type %in% c("between", "outside")) {
-      validate(need(!is.na(k1) & !is.na(k2), "Please enter both values."))
-      validate(need(k2 >= k1, "Upper value must be ≥ lower value."))
-    } else {
-      validate(need(!is.na(k1), "Please enter a value."))
-    }
-    
-    # --- Compute probability ---
-    prob <- switch(range_type,
-                   "below"   = pbinom(k1, n, p),
-                   "above"   = pbinom(k1 - 1, n, p, lower.tail = FALSE),
-                   "exactly" = dbinom(k1, n, p),
-                   "between" = pbinom(k2, n, p) - pbinom(k1 - 1, n, p),
-                   "outside" = 1 - (pbinom(k2, n, p) - pbinom(k1 - 1, n, p))
-    )
-    
-    # --- Build bar colors ---
-    x_vals  <- 0:n
-    bar_col <- rep("lightgrey", length(x_vals))
-    
-    if (range_type == "below") {
-      bar_col[x_vals <= k1] <- "#2774AE"
-    } else if (range_type == "above") {
-      bar_col[x_vals >= k1] <- "#2774AE"
-    } else if (range_type == "exactly") {
-      bar_col[x_vals == k1] <- "#2774AE"
-    } else if (range_type == "between") {
-      bar_col[x_vals >= k1 & x_vals <= k2] <- "#2774AE"
-    } else if (range_type == "outside") {
-      bar_col[x_vals < k1 | x_vals > k2] <- "#2774AE"
-    }
-    
-    list(prob = prob, n = n, p = p, k1 = k1, k2 = k2,
-         x_vals = x_vals, bar_col = bar_col)
-  })
-  
-  output$binom_plot <- renderPlot({
-    res <- binom_result()
-    if (is.null(res)) return(NULL)
-    
-    probs <- dbinom(res$x_vals, res$n, res$p)
-    
-    # trim display to ±4 SD around mean
-    mu    <- res$n * res$p
-    sigma <- sqrt(res$n * res$p * (1 - res$p))
-    lower <- max(0,      floor(mu - 4 * sigma))
-    upper <- min(res$n, ceiling(mu + 4 * sigma))
-    
-    df_plot <- data.frame(x = res$x_vals, prob = probs, color = res$bar_col)
-    
-    ggplot(df_plot, aes(x = x, y = prob, fill = color)) +
-      geom_col(color = "#2774AE") +
-      scale_x_continuous(limits = c(lower - 0.5, upper + 0.5),
-                         breaks = scales::pretty_breaks(n = 10)) +
-      scale_fill_identity() +
-      labs(title = expression(bold("Binomial Distribution")),
-           x = "Number of Successes (k)", y = "Probability") +
-      theme_minimal()
-  })
-  
-  output$binom_prob <- renderText({
-    res <- binom_result()
-    if (is.null(res)) return("")
-    paste0("Probability = ", round(res$prob, 4))
-  })
-  
-  output$binom_threshold_text <- renderText({
-    res <- binom_result()
-    if (is.null(res)) return("")
-    
-    switch(input$binom_range,
-           "below"   = paste0("P(X ≤ ", res$k1, ")"),
-           "above"   = paste0("P(X ≥ ", res$k1, ")"),
-           "exactly" = paste0("P(X = ", res$k1, ")"),
-           "between" = paste0("P(", res$k1, " ≤ X ≤ ", res$k2, ")"),
-           "outside" = paste0("P(X < ", res$k1, " or X > ", res$k2, ")")
-    )
-  })
-  
-  
   
   
   # ======================================================================
@@ -1679,9 +1682,9 @@ server <- function(input, output, session) {
     test_type <- res$test_type
     
     cv_str <- if (length(cv) == 2) {
-      paste0(round(cv[1], 4), " and ", round(cv[2], 4))
+      paste0(fmt_num(cv[1]), " and ", fmt_num(cv[2]))
     } else {
-      as.character(round(cv[1], 4))
+      fmt_num(cv[1])
     }
     
     test_label <- switch(test_type,
@@ -1700,7 +1703,7 @@ server <- function(input, output, session) {
     data.frame(
       label = c("Distribution", "Test type", "Significance level (α)",
                 "Critical value(s)", "Rejection region"),
-      value = c(dist_label, test_label, res$alpha, cv_str, res$rejection_region)
+      value = c(dist_label, test_label, fmt_num(res$alpha), cv_str, res$rejection_region)
     ) |>
       gt() |>
       tab_header(title = "Critical Value") |>
