@@ -82,9 +82,22 @@ ui <- fluidPage(
           conditionalPanel(
             condition = "input.binom_mode == 'inverse' && input.binom_range != 'exactly'",
             numericInput("binom_prob_input", "Desired Probability", value = 0.95, step = 0.01)
+          ),
+          
+          # Rounding control
+          tags$hr(),
+          tags$div(
+            style = "display: flex; align-items: center; gap: 6px; flex-wrap: nowrap;",
+            tags$span("Round probability to", style = "font-size: 0.82em; white-space: nowrap;"),
+            tags$div(style = "width: 60px; flex-shrink: 0;",
+                     numericInput("binom_round_digits", label = NULL,
+                                  value = 4, min = 0, max = 10, step = 1)
+            ),
+            tags$span("digits.", style = "font-size: 0.82em; white-space: nowrap;")
           )
         ),
         
+       
         mainPanel(
           div(style = "margin-top: 20px;",
               plotOutput("binom_plot")
@@ -137,6 +150,17 @@ ui <- fluidPage(
             numericInput("prob_input", "Probability", value = 0.95, step = 0.01)
           ),
           
+          # Rounding control 
+          tags$hr(),
+          tags$div(
+            style = "display: flex; align-items: center; gap: 6px; flex-wrap: nowrap;",
+            tags$span("Round probability to", style = "font-size: 0.82em; white-space: nowrap;"),
+            tags$div(style = "width: 75px; flex-shrink: 0; margin-bottom: -15px;",
+                     numericInput("norm_round_digits", label = NULL,
+                                  value = 4, min = 0, max = 10, step = 1)
+            ),
+            tags$span("digits.", style = "font-size: 0.82em; white-space: nowrap;")
+          )
         ),
         
         mainPanel(
@@ -190,6 +214,17 @@ ui <- fluidPage(
             numericInput("t_prob_input", "Probability", value = 0.95, step = 0.01)
           ),
           
+          # Rounding control 
+          tags$hr(),
+          tags$div(
+            style = "display: flex; align-items: center; gap: 6px; flex-wrap: nowrap;",
+            tags$span("Round probability to", style = "font-size: 0.82em; white-space: nowrap;"),
+            tags$div(style = "width: 60px; flex-shrink: 0;",
+                     numericInput("t_round_digits", label = NULL,
+                                  value = 4, min = 0, max = 10, step = 1)
+            ),
+            tags$span("digits.", style = "font-size: 0.82em; white-space: nowrap;")
+          )
         ),
         
         mainPanel(
@@ -231,6 +266,18 @@ ui <- fluidPage(
           conditionalPanel(
             condition = "input.chisq_mode == 'inverse'",
             numericInput("chisq_prob_input", "Desired Probability", value = 0.95, step = 0.01)
+          ),
+          
+          # Rounding control
+          tags$hr(),
+          tags$div(
+            style = "display: flex; align-items: center; gap: 6px; flex-wrap: nowrap;",
+            tags$span("Round probability to", style = "font-size: 0.82em; white-space: nowrap;"),
+            tags$div(style = "width: 60px; flex-shrink: 0;",
+                     numericInput("chisq_round_digits", label = NULL,
+                                  value = 4, min = 0, max = 10, step = 1)
+            ),
+            tags$span("digits.", style = "font-size: 0.82em; white-space: nowrap;")
           )
         ),
         mainPanel(
@@ -272,6 +319,18 @@ ui <- fluidPage(
           conditionalPanel(
             condition = "input.f_mode == 'inverse'",
             numericInput("f_prob_input", "Desired Probability", value = 0.95, step = 0.01)
+          ),
+          
+          # Rounding control
+          tags$hr(),
+          tags$div(
+            style = "display: flex; align-items: center; gap: 6px; flex-wrap: nowrap;",
+            tags$span("Round probability to", style = "font-size: 0.82em; white-space: nowrap;"),
+            tags$div(style = "width: 60px; flex-shrink: 0;",
+                     numericInput("f_round_digits", label = NULL,
+                                  value = 4, min = 0, max = 10, step = 1)
+            ),
+            tags$span("digits.", style = "font-size: 0.82em; white-space: nowrap;")
           )
         ),
         mainPanel(

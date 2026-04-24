@@ -11,6 +11,12 @@ server <- function(input, output, session) {
   # TAB 1: Binomial Distribution
   # ======================================================================
   
+  binom_round_digits <- reactive({
+    val <- input$binom_round_digits
+    if (is.null(val) || is.na(val)) return(4L)
+    as.integer(max(0L, min(10L, val)))
+  })
+  
   output$binom_dynamic_inputs <- renderUI({
     req(input$binom_n)
     n <- input$binom_n
@@ -116,7 +122,7 @@ server <- function(input, output, session) {
     ggplot(df_plot, aes(x = x, y = prob, fill = color)) +
       geom_col(color = "#2774AE") +
       scale_x_continuous(limits = c(lower - 0.5, upper + 0.5),
-                         breaks = seq(lower, upper, by = 1)) +
+                         breaks = scales::pretty_breaks(n = 10)(lower:upper)) +
       scale_fill_identity() +
       labs(title = expression(bold("Binomial Distribution")),
            x = "Number of Successes (k)", y = "Probability") +
@@ -126,7 +132,7 @@ server <- function(input, output, session) {
   output$binom_prob <- renderText({
     res <- binom_result()
     if (is.null(res)) return("")
-    paste0("Probability = ", fmt_num(res$prob))
+    paste0("Probability = ", fmt_num(res$prob, digits = binom_round_digits()))
   })
   
   output$binom_threshold_text <- renderText({
@@ -147,6 +153,12 @@ server <- function(input, output, session) {
   # ======================================================================
   # TAB 2: Normal Distribution
   # ======================================================================
+  
+  norm_round_digits <- reactive({
+    val <- input$norm_round_digits
+    if (is.null(val) || is.na(val)) return(4L)
+    as.integer(max(0L, min(10L, val)))
+  })
   
   debounced_num1 <- debounce(reactive(input$num1), 300)
   debounced_num2 <- debounce(reactive(input$num2), 300)
@@ -340,21 +352,27 @@ server <- function(input, output, session) {
     res <- norm_result()
     if (is.null(res)) return("")
     if (!is.null(res$error)) return(res$error)
-    paste0("Probability = ", fmt_num(res$prob))
-    })
+    d <- if (input$mode == "normal") {
+      val <- input$norm_round_digits; if (is.null(val)||is.na(val)) 4L else as.integer(max(0L,min(10L,val)))
+    } else 4L
+    paste0("Probability = ", fmt_num(res$prob, digits = d))
+  })
   
   output$threshold_text <- renderText({
     res <- norm_result()
     if (is.null(res)) return("")
     if (!is.null(res$error)) return("")
+    d <- if (input$mode == "inverse") {
+      val <- input$norm_round_digits; if (is.null(val)||is.na(val)) 4L else as.integer(max(0L,min(10L,val)))
+    } else 4L
     if (input$range == "above") {
-      paste0("Threshold: Above ", fmt_num(res$num1))
+      paste0("Threshold: Above ", fmt_num(res$num1, digits = d))
     } else if (input$range == "below") {
-      paste0("Threshold: Below ", fmt_num(res$num1))
+      paste0("Threshold: Below ", fmt_num(res$num1, digits = d))
     } else if (input$range == "between") {
-      paste0("Threshold: Between ", fmt_num(res$num1), " and ", fmt_num(res$num2))
+      paste0("Threshold: Between ", fmt_num(res$num1, digits = d), " and ", fmt_num(res$num2, digits = d))
     } else if (input$range == "outside") {
-      paste0("Threshold: Outside ", fmt_num(res$num1), " and ", fmt_num(res$num2))
+      paste0("Threshold: Outside ", fmt_num(res$num1, digits = d), " and ", fmt_num(res$num2, digits = d))
     }
   })
   
@@ -383,6 +401,12 @@ server <- function(input, output, session) {
   # ======================================================================
   # TAB 3: t-Distribution
   # ======================================================================
+  
+  t_round_digits <- reactive({
+    val <- input$t_round_digits
+    if (is.null(val) || is.na(val)) return(4L)
+    as.integer(max(0L, min(10L, val)))
+  })
   
   t_debounced_num1 <- debounce(reactive(input$t_num1), 300)
   t_debounced_num2 <- debounce(reactive(input$t_num2), 300)
@@ -572,7 +596,7 @@ server <- function(input, output, session) {
     res <- t_result()
     if (is.null(res)) return("")
     if (!is.null(res$error)) return(res$error)
-    paste0("Probability = ", fmt_num(res$prob))
+    paste0("Probability = ", fmt_num(res$prob, t_round_digits()))
   })
   
   output$t_threshold_text <- renderText({
@@ -624,6 +648,12 @@ server <- function(input, output, session) {
   # ======================================================================
   # TAB 4: Chi-square
   # ======================================================================
+  
+  chisq_round_digits <- reactive({
+    val <- input$chisq_round_digits
+    if (is.null(val) || is.na(val)) return(4L)
+    as.integer(max(0L, min(10L, val)))
+  })
   
   chisq_debounced_num1 <- debounce(reactive(input$chisq_num1), 300)
   
@@ -689,7 +719,7 @@ server <- function(input, output, session) {
   output$chisq_prob <- renderText({
     res <- chisq_result()
     if (is.null(res)) return("Invalid input.")
-    paste0("Probability = ", fmt_num(res$prob))
+    paste0("Probability = ", fmt_num(res$prob, chisq_round_digits()))
   })
   
   output$chisq_threshold_text <- renderText({
@@ -716,6 +746,12 @@ server <- function(input, output, session) {
   # ======================================================================
   # TAB 5: F Distribution
   # ======================================================================
+  
+  f_round_digits <- reactive({
+    val <- input$f_round_digits
+    if (is.null(val) || is.na(val)) return(4L)
+    as.integer(max(0L, min(10L, val)))
+  })
   
   f_debounced_num1 <- debounce(reactive(input$f_num1), 300)
   
@@ -783,7 +819,7 @@ server <- function(input, output, session) {
   output$f_prob <- renderText({
     res <- f_result()
     if (is.null(res)) return("Invalid input.")
-    paste0("Probability = ", fmt_num(res$prob))
+    paste0("Probability = ", fmt_num(res$prob, f_round_digits()))
   })
   
   output$f_threshold_text <- renderText({
@@ -1703,8 +1739,8 @@ server <- function(input, output, session) {
     data.frame(
       label = c("Distribution", "Test type", "Significance level (α)",
                 "Critical value(s)", "Rejection region"),
-      value = c(dist_label, test_label, fmt_num(res$alpha), cv_str, res$rejection_region)
-    ) |>
+      value = c(dist_label, test_label, format(input$cv_alpha, scientific = FALSE),
+                cv_str, res$rejection_region)    ) |>
       gt() |>
       tab_header(title = "Critical Value") |>
       tab_options(column_labels.hidden = TRUE, table.width = pct(100))
