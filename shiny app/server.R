@@ -2,7 +2,15 @@
 
 server <- function(input, output, session) {
   fmt_num <- function(x, digits = 4) {
-    formatC(as.numeric(x), format = "f", digits = digits)
+    if (is.na(x)) return("NA")
+    if (x == 0) return("0")
+    
+    if (abs(x) < 1e-4) {
+      # clean scientific notation
+      return(formatC(x, format = "e", digits = digits))
+    } else {
+      return(formatC(x, format = "f", digits = digits))
+    }
   }
   shinyalert("UCLA Stats Calculator", "This program comes with ABSOLUTELY NO WARRANTY; for details, see the 'Citation' tab. This is free software, and you are welcome to redistribute it under certain conditions; for details, see the 'Citation' tab.", type = "info")
   
@@ -46,7 +54,6 @@ server <- function(input, output, session) {
     
     prob_input <- if (!is.null(input$binom_prob_input)) as.numeric(input$binom_prob_input) else NA
     
-    # --- Inverse mode: find k from desired probability ---
     k1 <- k2 <- NA
     
     if (mode == "inverse") {
@@ -68,7 +75,6 @@ server <- function(input, output, session) {
       k2 <- if (!is.null(input$binom_k2)) as.integer(input$binom_k2) else NA
     }
     
-    # --- Validate k values ---
     if (range_type %in% c("between", "outside")) {
       validate(need(!is.na(k1) & !is.na(k2), "Please enter both values."))
       validate(need(k2 >= k1, "Upper value must be ≥ lower value."))
@@ -76,16 +82,26 @@ server <- function(input, output, session) {
       validate(need(!is.na(k1), "Please enter a value."))
     }
     
-    # --- Compute probability ---
     prob <- switch(range_type,
-                   "below"   = pbinom(k1, n, p),
-                   "above"   = pbinom(k1 - 1, n, p, lower.tail = FALSE),
+                   "below" = pbinom(k1, n, p),
+                   
+                   "above" = pbinom(k1 - 1, n, p, lower.tail = FALSE),
+                   
                    "exactly" = dbinom(k1, n, p),
-                   "between" = pbinom(k2, n, p) - pbinom(k1 - 1, n, p),
-                   "outside" = 1 - (pbinom(k2, n, p) - pbinom(k1 - 1, n, p))
+                   
+                   "between" = {
+                     log_val <- pbinom(k2, n, p, log.p = TRUE) +
+                       log1p(-exp(pbinom(k1 - 1, n, p, log.p = TRUE) -
+                                    pbinom(k2, n, p, log.p = TRUE)))
+                     exp(log_val)
+                   },
+                   
+                   "outside" = {
+                     inside <- pbinom(k2, n, p) - pbinom(k1 - 1, n, p)
+                     1 - inside
+                   }
     )
     
-    # --- Build bar colors ---
     x_vals  <- 0:n
     bar_col <- rep("lightgrey", length(x_vals))
     
@@ -109,23 +125,101 @@ server <- function(input, output, session) {
     res <- binom_result()
     if (is.null(res)) return(NULL)
     
-    probs <- dbinom(res$x_vals, res$n, res$p)
-    
-    # trim display to ±4 SD around mean
     mu    <- res$n * res$p
     sigma <- sqrt(res$n * res$p * (1 - res$p))
-    lower <- max(0,      floor(mu - 4 * sigma))
+    
+    use_normal <- res$n > 1000
+    
+    lower <- max(0, floor(mu - 4 * sigma))
     upper <- min(res$n, ceiling(mu + 4 * sigma))
     
-    df_plot <- data.frame(x = res$x_vals, prob = probs, color = res$bar_col)
+    x_display <- seq(lower, upper, by = 1)
+    
+    if (use_normal) {
+      probs <- dnorm(x_display, mean = mu, sd = sigma)
+    } else {
+      probs <- dbinom(x_display, res$n, res$p)
+    }
+    
+    k1 <- res$k1
+    k2 <- res$k2
+    range_type <- input$binom_range
+    
+    k1_plot <- if (!is.na(k1)) max(k1, lower) else NA
+    k2_plot <- if (!is.na(k2)) min(k2, upper) else NA
+    
+    bar_col <- rep("lightgrey", length(x_display))
+    
+    if (range_type == "below") {
+      
+      if (k1 < lower) {
+        # cutoff is left of window → nothing visible should be shaded
+        # (probability exists, just not in this window)
+        
+      } else if (k1 > upper) {
+        # cutoff is right of window → everything visible is shaded
+        bar_col[] <- "#2774AE"
+        
+      } else {
+        bar_col[x_display <= k1] <- "#2774AE"
+      }
+      
+    } else if (range_type == "above") {
+      
+      if (k1 > upper) {
+        # cutoff right of window → nothing visible shaded
+        
+      } else if (k1 < lower) {
+        # cutoff left of window → everything shaded
+        bar_col[] <- "#2774AE"
+        
+      } else {
+        bar_col[x_display >= k1] <- "#2774AE"
+      }
+      
+    } else if (range_type == "exactly") {
+      
+      if (k1 >= lower && k1 <= upper) {
+        bar_col[x_display == k1] <- "#2774AE"
+      }
+      
+    } else if (range_type == "between") {
+      
+      if (k2 < lower || k1 > upper) {
+        # completely outside window → no shading
+        
+      } else {
+        bar_col[x_display >= max(k1, lower) & x_display <= min(k2, upper)] <- "#2774AE"
+      }
+      
+    } else if (range_type == "outside") {
+      
+      if (k2 < lower || k1 > upper) {
+        # everything is outside → full shading
+        bar_col[] <- "#2774AE"
+        
+      } else {
+        bar_col[x_display < k1 | x_display > k2] <- "#2774AE"
+      }
+    }
+    df_plot <- data.frame(x = x_display, prob = probs, color = bar_col)
     
     ggplot(df_plot, aes(x = x, y = prob, fill = color)) +
       geom_col(color = "#2774AE") +
-      scale_x_continuous(limits = c(lower - 0.5, upper + 0.5),
-                         breaks = scales::pretty_breaks(n = 10)(lower:upper)) +
+      scale_x_continuous(
+        limits = c(lower - 0.5, upper + 0.5),
+        breaks = if (res$n <= 20) x_display else scales::pretty_breaks(n = 10)(x_display)
+      ) +
       scale_fill_identity() +
-      labs(title = expression(bold("Binomial Distribution")),
-           x = "Number of Successes (k)", y = "Probability") +
+      labs(
+        title = if (use_normal) {
+          "Binomial Distribution (Normal Approximation)"
+        } else {
+          "Binomial Distribution"
+        },
+        x = "Number of Successes (k)",
+        y = "Probability"
+      ) +
       theme_minimal()
   })
   
@@ -596,24 +690,29 @@ server <- function(input, output, session) {
     res <- t_result()
     if (is.null(res)) return("")
     if (!is.null(res$error)) return(res$error)
-    paste0("Probability = ", fmt_num(res$prob, t_round_digits()))
+    d <- if (input$t_mode == "t") {
+      val <- input$t_round_digits; if (is.null(val)||is.na(val)) 4L else as.integer(max(0L,min(10L,val)))
+    } else 4L
+    paste0("Probability = ", fmt_num(res$prob, digits = d))
   })
   
   output$t_threshold_text <- renderText({
     res <- t_result()
     if (is.null(res)) return("")
     if (!is.null(res$error)) return("")
+    d <- if (input$t_mode == "inverse") {
+      val <- input$t_round_digits; if (is.null(val)||is.na(val)) 4L else as.integer(max(0L,min(10L,val)))
+    } else 4L
     if (input$t_range == "above") {
-      paste0("Threshold: Above ", fmt_num(res$num1))
+      paste0("Threshold: Above ", fmt_num(res$num1, digits = d))
     } else if (input$t_range == "below") {
-      paste0("Threshold: Below ", fmt_num(res$num1))
+      paste0("Threshold: Below ", fmt_num(res$num1, digits = d))
     } else if (input$t_range == "between") {
-      paste0("Threshold: Between ", fmt_num(res$num1), " and ", fmt_num(res$num2))
+      paste0("Threshold: Between ", fmt_num(res$num1, digits = d), " and ", fmt_num(res$num2, digits = d))
     } else if (input$t_range == "outside") {
-      paste0("Threshold: Outside ", fmt_num(res$num1), " and ", fmt_num(res$num2))
+      paste0("Threshold: Outside ", fmt_num(res$num1, digits = d), " and ", fmt_num(res$num2, digits = d))
     }
   })
-  
   output$t_plot <- renderPlot({
     res <- t_result()
     if (is.null(res)) return("")
@@ -719,16 +818,22 @@ server <- function(input, output, session) {
   output$chisq_prob <- renderText({
     res <- chisq_result()
     if (is.null(res)) return("Invalid input.")
-    paste0("Probability = ", fmt_num(res$prob, chisq_round_digits()))
+    d <- if (input$chisq_mode == "chisq") {
+      val <- input$chisq_round_digits; if (is.null(val)||is.na(val)) 4L else as.integer(max(0L,min(10L,val)))
+    } else 4L
+    paste0("Probability = ", fmt_num(res$prob, digits = d))
   })
   
   output$chisq_threshold_text <- renderText({
     res <- chisq_result()
     if (is.null(res)) return("")
+    d <- if (input$chisq_mode == "inverse") {
+      val <- input$chisq_round_digits; if (is.null(val)||is.na(val)) 4L else as.integer(max(0L,min(10L,val)))
+    } else 4L
     if (input$chisq_range == "above") {
-      paste0("Threshold: Above ", fmt_num(res$num1))
+      paste0("Threshold: Above ", fmt_num(res$num1, digits = d))
     } else {
-      paste0("Threshold: Below ", fmt_num(res$num1))
+      paste0("Threshold: Below ", fmt_num(res$num1, digits = d))
     }
   })
   
@@ -819,16 +924,22 @@ server <- function(input, output, session) {
   output$f_prob <- renderText({
     res <- f_result()
     if (is.null(res)) return("Invalid input.")
-    paste0("Probability = ", fmt_num(res$prob, f_round_digits()))
+    d <- if (input$f_mode == "f") {
+      val <- input$f_round_digits; if (is.null(val)||is.na(val)) 4L else as.integer(max(0L,min(10L,val)))
+    } else 4L
+    paste0("Probability = ", fmt_num(res$prob, digits = d))
   })
   
   output$f_threshold_text <- renderText({
     res <- f_result()
     if (is.null(res)) return("")
+    d <- if (input$f_mode == "inverse") {
+      val <- input$f_round_digits; if (is.null(val)||is.na(val)) 4L else as.integer(max(0L,min(10L,val)))
+    } else 4L
     if (input$f_range == "above") {
-      paste0("Threshold: Above ", fmt_num(res$num1))
+      paste0("Threshold: Above ", fmt_num(res$num1, digits = d))
     } else {
-      paste0("Threshold: Below ", fmt_num(res$num1))
+      paste0("Threshold: Below ", fmt_num(res$num1, digits = d))
     }
   })
   
@@ -1716,11 +1827,20 @@ server <- function(input, output, session) {
     
     cv        <- res$cv
     test_type <- res$test_type
+    d <- { val <- input$cv_round_digits; if (is.null(val)||is.na(val)) 4L else as.integer(max(0L,min(10L,val))) }
     
     cv_str <- if (length(cv) == 2) {
-      paste0(fmt_num(cv[1]), " and ", fmt_num(cv[2]))
+      paste0(fmt_num(cv[1], digits = d), " and ", fmt_num(cv[2], digits = d))
     } else {
-      fmt_num(cv[1])
+      fmt_num(cv[1], digits = d)
+    }
+    
+    rejection_region <- if (length(cv) == 2) {
+      paste0("(-∞, ", fmt_num(cv[1], digits = d), "] OR [", fmt_num(cv[2], digits = d), ", ∞)")
+    } else if (test_type == "less") {
+      paste0("(-∞, ", fmt_num(cv[1], digits = d), "]")
+    } else {
+      paste0("[", fmt_num(cv[1], digits = d), ", ∞)")
     }
     
     test_label <- switch(test_type,
@@ -1740,12 +1860,12 @@ server <- function(input, output, session) {
       label = c("Distribution", "Test type", "Significance level (α)",
                 "Critical value(s)", "Rejection region"),
       value = c(dist_label, test_label, format(input$cv_alpha, scientific = FALSE),
-                cv_str, res$rejection_region)    ) |>
+                cv_str, rejection_region)
+    ) |>
       gt() |>
       tab_header(title = "Critical Value") |>
       tab_options(column_labels.hidden = TRUE, table.width = pct(100))
   })
-  
   
   # ======================================================================
   # TAB 11: Citation

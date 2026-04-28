@@ -88,8 +88,15 @@ ui <- fluidPage(
           tags$hr(),
           tags$div(
             style = "display: flex; align-items: center; gap: 6px; flex-wrap: nowrap;",
-            tags$span("Round probability to", style = "font-size: 0.82em; white-space: nowrap;"),
-            tags$div(style = "width: 60px; flex-shrink: 0;",
+            conditionalPanel(
+              condition = "input.binom_mode == 'binom'",
+              tags$span("Round probability to", style = "font-size: 0.82em; white-space: nowrap;")
+            ),
+            conditionalPanel(
+              condition = "input.binom_mode == 'inverse'",
+              tags$span("Round threshold to", style = "font-size: 0.82em; white-space: nowrap;")
+            ),
+            tags$div(style = "width: 75px; flex-shrink: 0; margin-bottom: -15px;",
                      numericInput("binom_round_digits", label = NULL,
                                   value = 4, min = 0, max = 10, step = 1)
             ),
@@ -154,7 +161,14 @@ ui <- fluidPage(
           tags$hr(),
           tags$div(
             style = "display: flex; align-items: center; gap: 6px; flex-wrap: nowrap;",
-            tags$span("Round probability to", style = "font-size: 0.82em; white-space: nowrap;"),
+            conditionalPanel(
+              condition = "input.mode == 'normal'",
+              tags$span("Round probability to", style = "font-size: 0.82em; white-space: nowrap;")
+            ),
+            conditionalPanel(
+              condition = "input.mode == 'inverse'",
+              tags$span("Round threshold to", style = "font-size: 0.82em; white-space: nowrap;")
+            ),
             tags$div(style = "width: 75px; flex-shrink: 0; margin-bottom: -15px;",
                      numericInput("norm_round_digits", label = NULL,
                                   value = 4, min = 0, max = 10, step = 1)
@@ -218,8 +232,15 @@ ui <- fluidPage(
           tags$hr(),
           tags$div(
             style = "display: flex; align-items: center; gap: 6px; flex-wrap: nowrap;",
-            tags$span("Round probability to", style = "font-size: 0.82em; white-space: nowrap;"),
-            tags$div(style = "width: 60px; flex-shrink: 0;",
+            conditionalPanel(
+              condition = "input.t_mode == 't'",
+              tags$span("Round probability to", style = "font-size: 0.82em; white-space: nowrap;")
+            ),
+            conditionalPanel(
+              condition = "input.t_mode == 'inverse'",
+              tags$span("Round threshold to", style = "font-size: 0.82em; white-space: nowrap;")
+            ),
+            tags$div(style = "width: 75px; flex-shrink: 0; margin-bottom: -15px;",
                      numericInput("t_round_digits", label = NULL,
                                   value = 4, min = 0, max = 10, step = 1)
             ),
@@ -272,8 +293,15 @@ ui <- fluidPage(
           tags$hr(),
           tags$div(
             style = "display: flex; align-items: center; gap: 6px; flex-wrap: nowrap;",
-            tags$span("Round probability to", style = "font-size: 0.82em; white-space: nowrap;"),
-            tags$div(style = "width: 60px; flex-shrink: 0;",
+            conditionalPanel(
+              condition = "input.chisq_mode == 'chisq'",
+              tags$span("Round probability to", style = "font-size: 0.82em; white-space: nowrap;")
+            ),
+            conditionalPanel(
+              condition = "input.chisq_mode == 'inverse'",
+              tags$span("Round threshold to", style = "font-size: 0.82em; white-space: nowrap;")
+            ),
+            tags$div(style = "width: 75px; flex-shrink: 0; margin-bottom: -15px;",
                      numericInput("chisq_round_digits", label = NULL,
                                   value = 4, min = 0, max = 10, step = 1)
             ),
@@ -325,8 +353,15 @@ ui <- fluidPage(
           tags$hr(),
           tags$div(
             style = "display: flex; align-items: center; gap: 6px; flex-wrap: nowrap;",
-            tags$span("Round probability to", style = "font-size: 0.82em; white-space: nowrap;"),
-            tags$div(style = "width: 60px; flex-shrink: 0;",
+            conditionalPanel(
+              condition = "input.f_mode == 'f'",
+              tags$span("Round probability to", style = "font-size: 0.82em; white-space: nowrap;")
+            ),
+            conditionalPanel(
+              condition = "input.f_mode == 'inverse'",
+              tags$span("Round threshold to", style = "font-size: 0.82em; white-space: nowrap;")
+            ),
+            tags$div(style = "width: 75px; flex-shrink: 0; margin-bottom: -15px;",
                      numericInput("f_round_digits", label = NULL,
                                   value = 4, min = 0, max = 10, step = 1)
             ),
@@ -757,7 +792,17 @@ ui <- fluidPage(
           ),
           
           numericInput("cv_alpha", "Significance level (α)", 
-                       value = 0.05, min = 0, max = 1, step = 0.01)
+                       value = 0.05, min = 0, max = 1, step = 0.01),
+          tags$hr(),
+          tags$div(
+            style = "display: flex; align-items: center; gap: 6px; flex-wrap: nowrap;",
+            tags$span("Round critical value to", style = "font-size: 0.82em; white-space: nowrap;"),
+            tags$div(style = "width: 75px; flex-shrink: 0; margin-bottom: -15px;",
+                     numericInput("cv_round_digits", label = NULL,
+                                  value = 4, min = 0, max = 10, step = 1)
+            ),
+            tags$span("digits.", style = "font-size: 0.82em; white-space: nowrap;")
+          )
         ),
         
         mainPanel(
