@@ -110,7 +110,6 @@ ui <- fluidPage(
               plotOutput("binom_plot")
           ),
           textOutput("binom_prob"),
-          textOutput("binom_threshold_text")
         )
       )
     ),

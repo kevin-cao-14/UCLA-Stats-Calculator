@@ -17,18 +17,30 @@ server <- function(input, output, session) {
     if (is.null(val) || is.na(val)) return(4L)
     as.integer(max(0L, min(10L, val)))
   })
+  binom_k_stored <- reactiveValues(k1 = 10, k2 = 10)
+  
+  observeEvent(input$binom_k1, {
+    binom_k_stored$k1 <- input$binom_k1
+  })
+  
+  observeEvent(input$binom_k2, {
+    binom_k_stored$k2 <- input$binom_k2
+  })
   
   output$binom_dynamic_inputs <- renderUI({
     req(input$binom_n)
     n <- input$binom_n
     
+    k1_val <- min(binom_k_stored$k1, n)
+    k2_val <- min(binom_k_stored$k2, n)
+    
     if (input$binom_range %in% c("between", "outside")) {
       tagList(
-        numericInput("binom_k1", "Lower value (k₁)", value = 5, min = 0, max = n, step = 1),
-        numericInput("binom_k2", "Upper value (k₂)", value = 10, min = 0, max = n, step = 1)
+        numericInput("binom_k1", "Lower value (k₁)", value = k1_val, min = 0, max = n, step = 1),
+        numericInput("binom_k2", "Upper value (k₂)", value = k2_val, min = 0, max = n, step = 1)
       )
     } else {
-      numericInput("binom_k1", "Value (k)", value = 10, min = 0, max = n, step = 1)
+      numericInput("binom_k1", "Value (k)", value = k1_val, min = 0, max = n, step = 1)
     }
   })
   
@@ -200,18 +212,6 @@ server <- function(input, output, session) {
     paste0("Probability = ", fmt_num(res$prob, digits = d))
   })
   
-  output$binom_threshold_text <- renderText({
-    res <- binom_result()
-    if (is.null(res)) return("")
-    
-    switch(input$binom_range,
-           "below"   = paste0("P(X ≤ ", res$k1, ")"),
-           "above"   = paste0("P(X ≥ ", res$k1, ")"),
-           "exactly" = paste0("P(X = ", res$k1, ")"),
-           "between" = paste0("P(", res$k1, " ≤ X ≤ ", res$k2, ")"),
-           "outside" = paste0("P(X < ", res$k1, " or X > ", res$k2, ")")
-    )
-  })
   
   
   
