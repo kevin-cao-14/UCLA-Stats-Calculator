@@ -1571,7 +1571,7 @@ server <- function(input, output, session) {
                 "$n_1$", "$\\bar{x}_1$", "$s_1$",
                 "$n_2$", "$\\bar{x}_2$", "$s_2$",
                 "$\\bar{x}_1 - \\bar{x}_2$",
-                "$df$", "$t_{obs}$", "$p$‑value"),
+                "df", "$t_{obs}$", "$p$‑value"),
       value = c(h0_str, ha_str,
                 res$n1, formatC(as.numeric(res$xbar1), format = "f", digits = 4), 
                 formatC(as.numeric(res$s1), format = "f", digits = 4),
