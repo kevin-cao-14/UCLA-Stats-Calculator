@@ -3,14 +3,7 @@
 server <- function(input, output, session) {
   fmt_num <- function(x, digits = 4) {
     if (is.na(x)) return("NA")
-    if (x == 0) return("0")
-    
-    if (abs(x) < 1e-4) {
-      # clean scientific notation
-      return(formatC(x, format = "e", digits = digits))
-    } else {
-      return(formatC(x, format = "f", digits = digits))
-    }
+    formatC(as.numeric(x), format = "f", digits = digits)
   }
   shinyalert("UCLA Stats Calculator", "This program comes with ABSOLUTELY NO WARRANTY; for details, see the 'Citation' tab. This is free software, and you are welcome to redistribute it under certain conditions; for details, see the 'Citation' tab.", type = "info")
   
@@ -102,23 +95,8 @@ server <- function(input, output, session) {
                    }
     )
     
-    x_vals  <- 0:n
-    bar_col <- rep("lightgrey", length(x_vals))
     
-    if (range_type == "below") {
-      bar_col[x_vals <= k1] <- "#2774AE"
-    } else if (range_type == "above") {
-      bar_col[x_vals >= k1] <- "#2774AE"
-    } else if (range_type == "exactly") {
-      bar_col[x_vals == k1] <- "#2774AE"
-    } else if (range_type == "between") {
-      bar_col[x_vals >= k1 & x_vals <= k2] <- "#2774AE"
-    } else if (range_type == "outside") {
-      bar_col[x_vals < k1 | x_vals > k2] <- "#2774AE"
-    }
-    
-    list(prob = prob, n = n, p = p, k1 = k1, k2 = k2,
-         x_vals = x_vals, bar_col = bar_col)
+    list(prob = prob, n = n, p = p, k1 = k1, k2 = k2)
   })
   
   output$binom_plot <- renderPlot({
@@ -145,19 +123,13 @@ server <- function(input, output, session) {
     k2 <- res$k2
     range_type <- input$binom_range
     
-    k1_plot <- if (!is.na(k1)) max(k1, lower) else NA
-    k2_plot <- if (!is.na(k2)) min(k2, upper) else NA
-    
     bar_col <- rep("lightgrey", length(x_display))
     
     if (range_type == "below") {
       
       if (k1 < lower) {
-        # cutoff is left of window → nothing visible should be shaded
-        # (probability exists, just not in this window)
-        
+
       } else if (k1 > upper) {
-        # cutoff is right of window → everything visible is shaded
         bar_col[] <- "#2774AE"
         
       } else {
@@ -167,10 +139,8 @@ server <- function(input, output, session) {
     } else if (range_type == "above") {
       
       if (k1 > upper) {
-        # cutoff right of window → nothing visible shaded
-        
+
       } else if (k1 < lower) {
-        # cutoff left of window → everything shaded
         bar_col[] <- "#2774AE"
         
       } else {
@@ -186,8 +156,7 @@ server <- function(input, output, session) {
     } else if (range_type == "between") {
       
       if (k2 < lower || k1 > upper) {
-        # completely outside window → no shading
-        
+
       } else {
         bar_col[x_display >= max(k1, lower) & x_display <= min(k2, upper)] <- "#2774AE"
       }
@@ -195,7 +164,6 @@ server <- function(input, output, session) {
     } else if (range_type == "outside") {
       
       if (k2 < lower || k1 > upper) {
-        # everything is outside → full shading
         bar_col[] <- "#2774AE"
         
       } else {
@@ -205,7 +173,7 @@ server <- function(input, output, session) {
     df_plot <- data.frame(x = x_display, prob = probs, color = bar_col)
     
     ggplot(df_plot, aes(x = x, y = prob, fill = color)) +
-      geom_col(color = "#2774AE") +
+      geom_col(color = "#2774AE", alpha = 0.5) +
       scale_x_continuous(
         limits = c(lower - 0.5, upper + 0.5),
         breaks = if (res$n <= 20) x_display else scales::pretty_breaks(n = 10)(x_display)
@@ -226,7 +194,10 @@ server <- function(input, output, session) {
   output$binom_prob <- renderText({
     res <- binom_result()
     if (is.null(res)) return("")
-    paste0("Probability = ", fmt_num(res$prob, digits = binom_round_digits()))
+    d <- if (input$binom_mode == "binom") {
+      val <- input$binom_round_digits; if (is.null(val)||is.na(val)) 4L else as.integer(max(0L,min(10L,val)))
+    } else 4L
+    paste0("Probability = ", fmt_num(res$prob, digits = d))
   })
   
   output$binom_threshold_text <- renderText({
@@ -1067,7 +1038,8 @@ server <- function(input, output, session) {
         if (is.null(test_res)) {
           return(gt(data.frame(Warning = "Invalid input parameters.")))
         }
-        p_value <- formatC(test_res$p.value, format = "f", digits = 4)
+        d <- { val <- input$prop_round_digits; if (is.null(val)||is.na(val)) 4L else as.integer(max(0L,min(10L,val))) }
+        p_value <- formatC(test_res$p.value, format = "f", digits = d)
         
         sample_p <- as.numeric(test_res$estimate)       
         successes <- round(sample_p * input$n)           
@@ -1099,7 +1071,8 @@ server <- function(input, output, session) {
           ),
           value = c(
             paste0("$p = ", input$p, "$"), alt_str, input$n, 
-            round(input$p_hat * input$n), round(test_res$estimate, 3),
+            round(input$p_hat * input$n), 
+            formatC(as.numeric(test_res$estimate), format = "f", digits = 4),
             p_value
           )
         )
@@ -1117,7 +1090,8 @@ server <- function(input, output, session) {
         if (is.null(test_res)) {
           return(gt(data.frame(Warning = "Invalid input parameters.")))
         }
-        p_value <- formatC(test_res$p.value, format = "f", digits = 4)
+        d <- { val <- input$prop_round_digits; if (is.null(val)||is.na(val)) 4L else as.integer(max(0L,min(10L,val))) }
+        p_value <- formatC(test_res$p.value, format = "f", digits = d)
         alpha <- c(0.01, 0.05, 0.1)
         decisions <- ifelse(p_value < alpha, "**rejected**", "**not rejected**")
         df <- data.frame(
@@ -1229,8 +1203,10 @@ server <- function(input, output, session) {
       value = c(paste0("$\\mu = ", res$mu0, "$"),
                 paste0("$\\mu ", alt_sym, " ", res$mu0, "$"),
                 res$n, round(res$xbar,3), round(res$s,3), 
-                round(res$t_stat,3),
-                formatC(res$p_value, format = "f", digits = 4))
+                round(res$t_stat,4),
+                { d <- { val <- input$mean_round_digits; 
+                if (is.null(val)||is.na(val)) 4L else as.integer(max(0L,min(10L,val))) };
+                formatC(res$p_value, format = "f", digits = d) })
     )
     df |>
       gt() |>
@@ -1244,6 +1220,7 @@ server <- function(input, output, session) {
   output$mean_conclusions <- render_gt({
     res <- mean_results()
     alpha <- c(0.01,0.05,0.10)
+    d <- { val <- input$mean_round_digits; if (is.null(val)||is.na(val)) 4L else as.integer(max(0L,min(10L,val))) }
     dec <- ifelse(res$p_value < alpha, "**rejected**", "**not rejected**")
     
     data.frame(
@@ -1382,9 +1359,21 @@ server <- function(input, output, session) {
       label = c("$H_0$", "$H_A$", "$n_1$", "$x_1$", "$\\hat p_1$", "$n_2$",
                 "$x_2$", "$\\hat p_2$", "$\\hat p_1 - \\hat p_2$", 
                 "$z_{obs}$", "$p$‑value"),
-      value = c(h0, ha,res$n1, res$x1, round(res$p1,3), res$n2, res$x2, 
-                round(res$p2,3), round(res$diff_hat,3), round(res$z_stat, 4),
-                formatC(res$p_value, format = "f", digits = 4))
+      value = c(h0, ha, res$n1, res$x1,
+                formatC(as.numeric(res$p1), format = "f", digits = 4),
+                res$n2, res$x2, 
+                formatC(as.numeric(res$p2), format = "f", digits = 4),
+                formatC(as.numeric(res$diff_hat), format = "f", digits = 4), 
+                {
+                  dz <- { val <- input$d2_zobs_round_digits
+                  if (is.null(val)||is.na(val)) 4L else as.integer(max(0L,min(10L,val))) }
+                  formatC(as.numeric(res$z_stat), format = "f", digits = dz)
+                },
+                {
+                  d <- { val <- input$d2_round_digits
+                  if (is.null(val)||is.na(val)) 4L else as.integer(max(0L,min(10L,val))) }
+                  formatC(as.numeric(res$p_value), format = "f", digits = d)
+                })
     )
     df |>
       gt() |>                 
@@ -1584,11 +1573,18 @@ server <- function(input, output, session) {
                 "$\\bar{x}_1 - \\bar{x}_2$",
                 "$df$", "$t_{obs}$", "$p$‑value"),
       value = c(h0_str, ha_str,
-                res$n1, round(res$xbar1, 3), round(res$s1, 3),
-                res$n2, round(res$xbar2, 3), round(res$s2, 3),
-                round(res$diff_xbar, 3),
-                round(res$df, 2), round(res$t_stat, 3),
-                formatC(res$p_value, format = "f", digits = 4))
+                res$n1, formatC(as.numeric(res$xbar1), format = "f", digits = 4), 
+                formatC(as.numeric(res$s1), format = "f", digits = 4),
+                res$n2, formatC(as.numeric(res$xbar2), format = "f", digits = 4), 
+                formatC(as.numeric(res$s2), format = "f", digits = 4),
+                formatC(as.numeric(res$diff_xbar), format = "f", digits = 4),
+                round(res$df, 2),
+                formatC(as.numeric(res$t_stat), format = "f", digits = 4),
+                {
+                  d <- { val <- input$d2m_round_digits
+                  if (is.null(val)||is.na(val)) 4L else as.integer(max(0L,min(10L,val))) }
+                  formatC(as.numeric(res$p_value), format = "f", digits = d)
+                })
     )
     
     df_out |>

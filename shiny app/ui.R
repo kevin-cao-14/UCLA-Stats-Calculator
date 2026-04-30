@@ -437,9 +437,18 @@ ui <- fluidPage(
                  ),
                  
                  checkboxInput("use_successes",
-                               "Use number of successes instead", FALSE)
+                               "Use number of successes instead", FALSE),
+               tags$hr(),
+               tags$div(
+                 style = "display: flex; align-items: center; gap: 6px; flex-wrap: nowrap;",
+                 tags$span("Round p-value to", style = "font-size: 0.82em; white-space: nowrap;"),
+                 tags$div(style = "width: 75px; flex-shrink: 0; margin-bottom: -15px;",
+                          numericInput("prop_round_digits", label = NULL,
+                                       value = 4, min = 0, max = 10, step = 1)
+                 ),
+                 tags$span("digits.", style = "font-size: 0.82em; white-space: nowrap;")
+               )
                ),
-               
                mainPanel(
                  
                  div(style = "margin-top: 20px;", 
@@ -507,7 +516,17 @@ ui <- fluidPage(
           numericInput("mean_mu0", "Hypothesized mean (μ₀)", value = 0),
           numericInput("mean_n", "Sample size (n)", value = 30, step = 1),
           numericInput("mean_xbar", "Sample mean(x̄)", value = .10),
-          numericInput("mean_s", "Sample SD (s)", value = 1)
+          numericInput("mean_s", "Sample SD (s)", value = 1),
+          tags$hr(),
+          tags$div(
+            style = "display: flex; align-items: center; gap: 6px; flex-wrap: nowrap;",
+            tags$span("Round p-value to", style = "font-size: 0.82em; white-space: nowrap;"),
+            tags$div(style = "width: 75px; flex-shrink: 0; margin-bottom: -15px;",
+                     numericInput("mean_round_digits", label = NULL,
+                                  value = 4, min = 0, max = 10, step = 1)
+            ),
+            tags$span("digits.", style = "font-size: 0.82em; white-space: nowrap;")
+          )
         ),
         
         mainPanel(
@@ -603,7 +622,26 @@ ui <- fluidPage(
             numericInput("d2_x2", "Number of successes (x₂)", 22, step = 1)
           ),
           checkboxInput("d2_use_successes2",
-                        "Use second number of successes instead", FALSE)
+                        "Use second number of successes instead", FALSE),
+          tags$hr(),
+          tags$div(
+            style = "display: flex; align-items: center; gap: 6px; flex-wrap: nowrap;",
+            tags$span("Round z-obs to", style = "font-size: 0.82em; white-space: nowrap;"),
+            tags$div(style = "width: 75px; flex-shrink: 0; margin-bottom: -15px;",
+                     numericInput("d2_zobs_round_digits", label = NULL,
+                                  value = 4, min = 0, max = 10, step = 1)
+            ),
+            tags$span("digits.", style = "font-size: 0.82em; white-space: nowrap;")
+          ),
+          tags$div(
+            style = "display: flex; align-items: center; gap: 6px; flex-wrap: nowrap;",
+            tags$span("Round p-value to", style = "font-size: 0.82em; white-space: nowrap;"),
+            tags$div(style = "width: 75px; flex-shrink: 0; margin-bottom: -15px;",
+                     numericInput("d2_round_digits", label = NULL,
+                                  value = 4, min = 0, max = 10, step = 1)
+            ),
+            tags$span("digits.", style = "font-size: 0.82em; white-space: nowrap;")
+          )
         ),
         
         # main: plot and tables
@@ -685,7 +723,17 @@ ui <- fluidPage(
           numericInput("d2m_n2", HTML("Sample size (n<sub>2</sub>)"), value = 30, min = 2, step = 1),
           numericInput("d2m_xbar2", HTML("Sample mean (x&#772;<sub>2</sub>)"), value = 116.4),
           numericInput("d2m_s2", HTML("Sample SD (s<sub>2</sub>)"), value = 16.09, min = 0), 
-          twomeans_str
+          twomeans_str,
+          tags$hr(),
+          tags$div(
+            style = "display: flex; align-items: center; gap: 6px; flex-wrap: nowrap;",
+            tags$span("Round p-value to", style = "font-size: 0.82em; white-space: nowrap;"),
+            tags$div(style = "width: 75px; flex-shrink: 0; margin-bottom: -15px;",
+                     numericInput("d2m_round_digits", label = NULL,
+                                  value = 4, min = 0, max = 10, step = 1)
+            ),
+            tags$span("digits.", style = "font-size: 0.82em; white-space: nowrap;")
+          )
         ), 
         mainPanel(
         
