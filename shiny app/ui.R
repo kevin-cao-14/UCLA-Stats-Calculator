@@ -440,7 +440,7 @@ ui <- fluidPage(
                tags$hr(),
                tags$div(
                  style = "display: flex; align-items: center; gap: 6px; flex-wrap: nowrap;",
-                 tags$span("Round p-value to", style = "font-size: 0.82em; white-space: nowrap;"),
+                 tags$span(HTML("Round <i>p</i>-value to"), style = "font-size: 0.82em; white-space: nowrap;"),
                  tags$div(style = "width: 75px; flex-shrink: 0; margin-bottom: -15px;",
                           numericInput("prop_round_digits", label = NULL,
                                        value = 4, min = 0, max = 10, step = 1)
@@ -519,7 +519,7 @@ ui <- fluidPage(
           tags$hr(),
           tags$div(
             style = "display: flex; align-items: center; gap: 6px; flex-wrap: nowrap;",
-            tags$span("Round p-value to", style = "font-size: 0.82em; white-space: nowrap;"),
+            tags$span(HTML("Round <i>p</i>-value to"), style = "font-size: 0.82em; white-space: nowrap;"),
             tags$div(style = "width: 75px; flex-shrink: 0; margin-bottom: -15px;",
                      numericInput("mean_round_digits", label = NULL,
                                   value = 4, min = 0, max = 10, step = 1)
@@ -625,7 +625,7 @@ ui <- fluidPage(
           tags$hr(),
           tags$div(
             style = "display: flex; align-items: center; gap: 6px; flex-wrap: nowrap;",
-            tags$span("Round z-obs to", style = "font-size: 0.82em; white-space: nowrap;"),
+            tags$span(HTML("Round <i>z</i><sub>obs</sub> to"), style = "font-size: 0.82em; white-space: nowrap;"),
             tags$div(style = "width: 75px; flex-shrink: 0; margin-bottom: -15px;",
                      numericInput("d2_zobs_round_digits", label = NULL,
                                   value = 4, min = 0, max = 10, step = 1)
@@ -634,7 +634,7 @@ ui <- fluidPage(
           ),
           tags$div(
             style = "display: flex; align-items: center; gap: 6px; flex-wrap: nowrap;",
-            tags$span("Round p-value to", style = "font-size: 0.82em; white-space: nowrap;"),
+            tags$span(HTML("Round <i>p</i>-value to"), style = "font-size: 0.82em; white-space: nowrap;"),
             tags$div(style = "width: 75px; flex-shrink: 0; margin-bottom: -15px;",
                      numericInput("d2_round_digits", label = NULL,
                                   value = 4, min = 0, max = 10, step = 1)
@@ -726,7 +726,7 @@ ui <- fluidPage(
           tags$hr(),
           tags$div(
             style = "display: flex; align-items: center; gap: 6px; flex-wrap: nowrap;",
-            tags$span("Round p-value to", style = "font-size: 0.82em; white-space: nowrap;"),
+            tags$span(HTML("Round <i>p</i>-value to"), style = "font-size: 0.82em; white-space: nowrap;"),
             tags$div(style = "width: 75px; flex-shrink: 0; margin-bottom: -15px;",
                      numericInput("d2m_round_digits", label = NULL,
                                   value = 4, min = 0, max = 10, step = 1)

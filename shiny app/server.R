@@ -1358,7 +1358,7 @@ server <- function(input, output, session) {
     df <- data.frame(
       label = c("$H_0$", "$H_A$", "$n_1$", "$x_1$", "$\\hat p_1$", "$n_2$",
                 "$x_2$", "$\\hat p_2$", "$\\hat p_1 - \\hat p_2$", 
-                "$z_{obs}$", "$p$‑value"),
+                "$z_{\\text{obs}}$", "$p$‑value"),
       value = c(h0, ha, res$n1, res$x1,
                 formatC(as.numeric(res$p1), format = "f", digits = 4),
                 res$n2, res$x2, 
@@ -1571,7 +1571,7 @@ server <- function(input, output, session) {
                 "$n_1$", "$\\bar{x}_1$", "$s_1$",
                 "$n_2$", "$\\bar{x}_2$", "$s_2$",
                 "$\\bar{x}_1 - \\bar{x}_2$",
-                "df", "$t_{obs}$", "$p$‑value"),
+                "$df$", "$t_{\\text{obs}}$", "$p$‑value"),
       value = c(h0_str, ha_str,
                 res$n1, formatC(as.numeric(res$xbar1), format = "f", digits = 4), 
                 formatC(as.numeric(res$s1), format = "f", digits = 4),
