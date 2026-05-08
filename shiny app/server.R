@@ -1571,7 +1571,7 @@ server <- function(input, output, session) {
                 "$n_1$", "$\\bar{x}_1$", "$s_1$",
                 "$n_2$", "$\\bar{x}_2$", "$s_2$",
                 "$\\bar{x}_1 - \\bar{x}_2$",
-                "$df$", "$t_{\\text{obs}}$", "$p$‑value"),
+                "$\\textit{df}$", "$t_{\\text{obs}}$", "$p$‑value"),
       value = c(h0_str, ha_str,
                 res$n1, formatC(as.numeric(res$xbar1), format = "f", digits = 4), 
                 formatC(as.numeric(res$s1), format = "f", digits = 4),
@@ -1880,7 +1880,7 @@ server <- function(input, output, session) {
   
   output$APA <- renderUI({
     apa1 <- p("")
-    apa2 <- p("APA: Anuurad, T., Chan, C., Labia, H., Cao, K., Maierhofer, T. (2026). UCLA Stats Calculator (Version 1.1) [Computer software].", tags$a(href = "https://github.com/tselmena/S25-STATS-199-Shiny-App", "https://github.com/tselmena/S25-STATS-199-Shiny-App"))
+    apa2 <- p("APA: Anuurad, T., Chan, C., Labia, H., Cao, K., Maierhofer, T. (2026). UCLA Stats Calculator (Version 1.11) [Computer software].", tags$a(href = "https://github.com/tselmena/S25-STATS-199-Shiny-App", "https://github.com/tselmena/S25-STATS-199-Shiny-App"))
     apa3 <- p("")
     
     HTML(paste(apa1, apa2, apa3, sep = "<br>"))
@@ -1893,7 +1893,7 @@ server <- function(input, output, session) {
     tag3 <- p("title = {UCLA Stats Calculator},", style = "text-indent: 1em;")
     tag4 <- p("author = {Anuurad, Tselmen and Chan, Claudia and Labia, Hayley and Cao, Kevin and Maierhofer, Thomas},", style = "text-indent: 1em;")
     tag5 <- p("year = {2026},", style = "text-indent: 1em;")
-    tag6 <- p("version = {1.1},", style = "text-indent: 1em;")
+    tag6 <- p("version = {1.11},", style = "text-indent: 1em;")
     tag7 <- p("howpublished = {https://github.com/tselmena/S25-STATS-199-Shiny-App},", style = "text-indent: 1em;")
     tag8 <- p("note = {R Shiny application developed at UCLA; all authors contributed equally; supervised by Thomas Maierhofer}", style = "text-indent: 1em")
     tag9 <- p("}")
