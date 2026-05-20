@@ -401,9 +401,17 @@ ui <- fluidPage(
                      min = 0.01,
                      max = 0.999,
                      step = 0.01
+                   ),
+                   tags$div(
+                     style = "display: flex; align-items: center; gap: 6px; flex-wrap: nowrap;",
+                     tags$span("Round interval to", style = "font-size: 0.82em; white-space: nowrap;"),
+                     tags$div(style = "width: 75px; flex-shrink: 0; margin-bottom: -15px;",
+                              numericInput("prop_ci_round_digits", label = NULL,
+                                           value = 3, min = 0, max = 10, step = 1)
+                     ),
+                     tags$span("digits.", style = "font-size: 0.82em; white-space: nowrap;")
                    )
                  ),
-                 
                  # only show the test-type radio buttons if "Test" is checked
                  conditionalPanel(
                    condition = "input.show_test == true",
@@ -450,8 +458,11 @@ ui <- fluidPage(
                ),
                mainPanel(
                  
-                 div(style = "margin-top: 20px;", 
-                     plotOutput("plot")
+                 conditionalPanel(
+                   condition = "input.show_test == true",
+                   div(style = "margin-top: 20px;", 
+                       plotOutput("plot")
+                   )
                  ),
                  
                  # TEST ON - Stacked tables
@@ -498,7 +509,16 @@ ui <- fluidPage(
                          value = 0.95,
                          min = 0.01,
                          max = 0.999,
-                         step = 0.01)
+                         step = 0.01),
+            tags$div(
+              style = "display: flex; align-items: center; gap: 6px; flex-wrap: nowrap;",
+              tags$span("Round interval to", style = "font-size: 0.82em; white-space: nowrap;"),
+              tags$div(style = "width: 75px; flex-shrink: 0; margin-bottom: -15px;",
+                       numericInput("mean_ci_round_digits", label = NULL,
+                                    value = 3, min = 0, max = 10, step = 1)
+              ),
+              tags$span("digits.", style = "font-size: 0.82em; white-space: nowrap;")
+            )
           ),
           
           # alternative
@@ -529,8 +549,11 @@ ui <- fluidPage(
         ),
         
         mainPanel(
-          div(style = "margin-top: 20px;", 
-              plotOutput("mean_plot")
+          conditionalPanel(
+            condition = "input.mean_show_test == true",
+            div(style = "margin-top: 20px;", 
+                plotOutput("mean_plot")
+            )
           ),
           
           # TEST ON - Stacked tables
@@ -578,7 +601,16 @@ ui <- fluidPage(
                          value = 0.95,
                          min = 0.01,
                          max = 0.999,
-                         step = 0.01)
+                         step = 0.01),
+            tags$div(
+              style = "display: flex; align-items: center; gap: 6px; flex-wrap: nowrap;",
+              tags$span("Round interval to", style = "font-size: 0.82em; white-space: nowrap;"),
+              tags$div(style = "width: 75px; flex-shrink: 0; margin-bottom: -15px;",
+                       numericInput("d2_ci_round_digits", label = NULL,
+                                    value = 3, min = 0, max = 10, step = 1)
+              ),
+              tags$span("digits.", style = "font-size: 0.82em; white-space: nowrap;")
+            )
           ),
           
           conditionalPanel(
@@ -645,8 +677,11 @@ ui <- fluidPage(
         
         # main: plot and tables
         mainPanel(
-          div(style = "margin-top: 20px;", 
-              plotOutput("d2_zplot")
+          conditionalPanel(
+            condition = "input.d2_show_test == true",
+            div(style = "margin-top: 20px;", 
+                plotOutput("d2_zplot")
+            )
           ),
           
           # TEST ON - Stacked tables
@@ -698,7 +733,16 @@ ui <- fluidPage(
                          value = 0.95,
                          min = 0.01,
                          max = 0.999,
-                         step = 0.01)
+                         step = 0.01),
+            tags$div(
+              style = "display: flex; align-items: center; gap: 6px; flex-wrap: nowrap;",
+              tags$span("Round interval to", style = "font-size: 0.82em; white-space: nowrap;"),
+              tags$div(style = "width: 75px; flex-shrink: 0; margin-bottom: -15px;",
+                       numericInput("d2m_ci_round_digits", label = NULL,
+                                    value = 3, min = 0, max = 10, step = 1)
+              ),
+              tags$span("digits.", style = "font-size: 0.82em; white-space: nowrap;")
+            )
           ),
           
           # Type of Test
@@ -736,8 +780,11 @@ ui <- fluidPage(
         ), 
         mainPanel(
         
-          div(style = "margin-top: 20px;", 
-              plotOutput("d2m_plot")
+          conditionalPanel(
+            condition = "input.d2m_show_test == true",
+            div(style = "margin-top: 20px;", 
+                plotOutput("d2m_plot")
+            )
           ),
           
           conditionalPanel(

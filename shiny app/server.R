@@ -1123,7 +1123,11 @@ server <- function(input, output, session) {
                   "Hypothesized Proportion in Range"),
         value = c(
           paste0(round(as.numeric(input$conf_level)*100), "%"),
-          sprintf("[%.3f, %.3f]", ci[1], ci[2]),
+          {
+            dci <- { val <- input$prop_ci_round_digits
+            if (is.null(val)||is.na(val)) 3L else as.integer(max(0L,min(10L,val))) }
+            sprintf(paste0("[%.", dci, "f, %.", dci, "f]"), ci[1], ci[2])
+          },
           ifelse(input$p >= ci[1] && input$p <= ci[2], "Yes", "No")
         )
       ) |>
@@ -1143,7 +1147,11 @@ server <- function(input, output, session) {
         label = c("Confidence level", "Interval"),
         value = c(
           paste0(round(as.numeric(input$conf_level)*100), "%"),
-          sprintf("[%.3f, %.3f]", ci[1], ci[2])
+          {
+            dci <- { val <- input$prop_ci_round_digits
+            if (is.null(val)||is.na(val)) 3L else as.integer(max(0L,min(10L,val))) }
+            sprintf(paste0("[%.", dci, "f, %.", dci, "f]"), ci[1], ci[2])
+          }
         )
       ) |>
         gt() |>
@@ -1239,7 +1247,11 @@ server <- function(input, output, session) {
     data.frame(
       label = c("Confidence level", "Interval"),
       value = c(paste0(round(as.numeric(input$mean_conf_level) * 100), "%"),
-                sprintf("[%.3f, %.3f]", res$ci[1], res$ci[2]))
+                {
+                  dci <- { val <- input$mean_ci_round_digits
+                  if (is.null(val)||is.na(val)) 3L else as.integer(max(0L,min(10L,val))) }
+                  sprintf(paste0("[%.", dci, "f, %.", dci, "f]"), res$ci[1], res$ci[2])
+                })
     ) |>
       gt() |>
       tab_header(title = "Confidence Interval") |>
@@ -1404,7 +1416,11 @@ server <- function(input, output, session) {
     data.frame(
       label = c("Confidence level", "Interval"),
       value = c(paste0(round(as.numeric(input$d2_conf_level)*100), "%"),
-                sprintf("[%.3f, %.3f]", res$ci[1], res$ci[2]))
+                {
+                  dci <- { val <- input$d2_ci_round_digits
+                  if (is.null(val)||is.na(val)) 3L else as.integer(max(0L,min(10L,val))) }
+                  sprintf(paste0("[%.", dci, "f, %.", dci, "f]"), res$ci[1], res$ci[2])
+                })
     ) |>
       gt() |>
       tab_header(title = "Confidence Interval") |>
@@ -1619,7 +1635,11 @@ server <- function(input, output, session) {
     data.frame(
       label = c("Confidence level", "Interval"),
       value = c(paste0(round(res$conf_level * 100), "%"),
-                sprintf("[%.3f, %.3f]", res$ci[1], res$ci[2]))
+                {
+                  dci <- { val <- input$d2m_ci_round_digits
+                  if (is.null(val)||is.na(val)) 3L else as.integer(max(0L,min(10L,val))) }
+                  sprintf(paste0("[%.", dci, "f, %.", dci, "f]"), res$ci[1], res$ci[2])
+                })
     ) |>
       gt() |>
       fmt_markdown(columns = label) |>
