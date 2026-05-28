@@ -225,8 +225,8 @@ server <- function(input, output, session) {
     as.integer(max(0L, min(10L, val)))
   })
   
-  debounced_num1 <- debounce(reactive(input$num1), 300)
-  debounced_num2 <- debounce(reactive(input$num2), 300)
+  debounced_num1 <- debounce(reactive(input$num1), 2000)
+  debounced_num2 <- debounce(reactive(input$num2), 2000)
   
   observe({
     if (input$mode == "inverse" && input$range %in% c("between", "outside")) {
@@ -417,27 +417,29 @@ server <- function(input, output, session) {
     res <- norm_result()
     if (is.null(res)) return("")
     if (!is.null(res$error)) return(res$error)
-    d <- if (input$mode == "normal") {
-      val <- input$norm_round_digits; if (is.null(val)||is.na(val)) 4L else as.integer(max(0L,min(10L,val)))
-    } else 4L
-    paste0("Probability = ", fmt_num(res$prob, digits = d))
+    if (input$mode == "inverse") {
+      paste0("Probability = ", input$prob_input)
+    } else {
+      d <- { val <- input$norm_round_digits; if (is.null(val)||is.na(val)) 4L else as.integer(max(0L,min(10L,val))) }
+      paste0("Probability = ", fmt_num(res$prob, digits = d))
+    }
   })
   
   output$threshold_text <- renderText({
     res <- norm_result()
     if (is.null(res)) return("")
     if (!is.null(res$error)) return("")
-    d <- if (input$mode == "inverse") {
-      val <- input$norm_round_digits; if (is.null(val)||is.na(val)) 4L else as.integer(max(0L,min(10L,val)))
-    } else 4L
-    if (input$range == "above") {
-      paste0("Threshold: Above ", fmt_num(res$num1, digits = d))
-    } else if (input$range == "below") {
-      paste0("Threshold: Below ", fmt_num(res$num1, digits = d))
-    } else if (input$range == "between") {
-      paste0("Threshold: Between ", fmt_num(res$num1, digits = d), " and ", fmt_num(res$num2, digits = d))
-    } else if (input$range == "outside") {
-      paste0("Threshold: Outside ", fmt_num(res$num1, digits = d), " and ", fmt_num(res$num2, digits = d))
+    if (input$mode == "normal") {
+      if (input$range == "above") paste0("Threshold: Above ", input$num1)
+      else if (input$range == "below") paste0("Threshold: Below ", input$num1)
+      else if (input$range == "between") paste0("Threshold: Between ", input$num1, " and ", input$num2)
+      else if (input$range == "outside") paste0("Threshold: Outside ", input$num1, " and ", input$num2)
+    } else {
+      d <- { val <- input$norm_round_digits; if (is.null(val)||is.na(val)) 4L else as.integer(max(0L,min(10L,val))) }
+      if (input$range == "above") paste0("Threshold: Above ", fmt_num(res$num1, digits = d))
+      else if (input$range == "below") paste0("Threshold: Below ", fmt_num(res$num1, digits = d))
+      else if (input$range == "between") paste0("Threshold: Between ", fmt_num(res$num1, digits = d), " and ", fmt_num(res$num2, digits = d))
+      else if (input$range == "outside") paste0("Threshold: Outside ", fmt_num(res$num1, digits = d), " and ", fmt_num(res$num2, digits = d))
     }
   })
   
@@ -473,8 +475,8 @@ server <- function(input, output, session) {
     as.integer(max(0L, min(10L, val)))
   })
   
-  t_debounced_num1 <- debounce(reactive(input$t_num1), 300)
-  t_debounced_num2 <- debounce(reactive(input$t_num2), 300)
+  t_debounced_num1 <- debounce(reactive(input$t_num1), 2000)
+  t_debounced_num2 <- debounce(reactive(input$t_num2), 2000)
   
   observe({
     if (input$t_mode == "inverse" && input$t_range %in% c("between", "outside")) {
@@ -661,29 +663,32 @@ server <- function(input, output, session) {
     res <- t_result()
     if (is.null(res)) return("")
     if (!is.null(res$error)) return(res$error)
-    d <- if (input$t_mode == "t") {
-      val <- input$t_round_digits; if (is.null(val)||is.na(val)) 4L else as.integer(max(0L,min(10L,val)))
-    } else 4L
-    paste0("Probability = ", fmt_num(res$prob, digits = d))
+    if (input$t_mode == "inverse") {
+      paste0("Probability = ", input$t_prob_input)
+    } else {
+      d <- { val <- input$t_round_digits; if (is.null(val)||is.na(val)) 4L else as.integer(max(0L,min(10L,val))) }
+      paste0("Probability = ", fmt_num(res$prob, digits = d))
+    }
   })
   
   output$t_threshold_text <- renderText({
     res <- t_result()
     if (is.null(res)) return("")
     if (!is.null(res$error)) return("")
-    d <- if (input$t_mode == "inverse") {
-      val <- input$t_round_digits; if (is.null(val)||is.na(val)) 4L else as.integer(max(0L,min(10L,val)))
-    } else 4L
-    if (input$t_range == "above") {
-      paste0("Threshold: Above ", fmt_num(res$num1, digits = d))
-    } else if (input$t_range == "below") {
-      paste0("Threshold: Below ", fmt_num(res$num1, digits = d))
-    } else if (input$t_range == "between") {
-      paste0("Threshold: Between ", fmt_num(res$num1, digits = d), " and ", fmt_num(res$num2, digits = d))
-    } else if (input$t_range == "outside") {
-      paste0("Threshold: Outside ", fmt_num(res$num1, digits = d), " and ", fmt_num(res$num2, digits = d))
+    if (input$t_mode == "t") {
+      if (input$t_range == "above") paste0("Threshold: Above ", input$t_num1)
+      else if (input$t_range == "below") paste0("Threshold: Below ", input$t_num1)
+      else if (input$t_range == "between") paste0("Threshold: Between ", input$t_num1, " and ", input$t_num2)
+      else if (input$t_range == "outside") paste0("Threshold: Outside ", input$t_num1, " and ", input$t_num2)
+    } else {
+      d <- { val <- input$t_round_digits; if (is.null(val)||is.na(val)) 4L else as.integer(max(0L,min(10L,val))) }
+      if (input$t_range == "above") paste0("Threshold: Above ", fmt_num(res$num1, digits = d))
+      else if (input$t_range == "below") paste0("Threshold: Below ", fmt_num(res$num1, digits = d))
+      else if (input$t_range == "between") paste0("Threshold: Between ", fmt_num(res$num1, digits = d), " and ", fmt_num(res$num2, digits = d))
+      else if (input$t_range == "outside") paste0("Threshold: Outside ", fmt_num(res$num1, digits = d), " and ", fmt_num(res$num2, digits = d))
     }
   })
+  
   output$t_plot <- renderPlot({
     res <- t_result()
     if (is.null(res)) return("")
@@ -725,7 +730,7 @@ server <- function(input, output, session) {
     as.integer(max(0L, min(10L, val)))
   })
   
-  chisq_debounced_num1 <- debounce(reactive(input$chisq_num1), 300)
+  chisq_debounced_num1 <- debounce(reactive(input$chisq_num1), 2000)
   
   chisq_threshold <- reactiveValues(num1 = 2)
   chisq_threshold_locked_by_user <- reactiveVal(FALSE)
@@ -789,22 +794,24 @@ server <- function(input, output, session) {
   output$chisq_prob <- renderText({
     res <- chisq_result()
     if (is.null(res)) return("Invalid input.")
-    d <- if (input$chisq_mode == "chisq") {
-      val <- input$chisq_round_digits; if (is.null(val)||is.na(val)) 4L else as.integer(max(0L,min(10L,val)))
-    } else 4L
-    paste0("Probability = ", fmt_num(res$prob, digits = d))
+    if (input$chisq_mode == "inverse") {
+      paste0("Probability = ", input$chisq_prob_input)
+    } else {
+      d <- { val <- input$chisq_round_digits; if (is.null(val)||is.na(val)) 4L else as.integer(max(0L,min(10L,val))) }
+      paste0("Probability = ", fmt_num(res$prob, digits = d))
+    }
   })
   
   output$chisq_threshold_text <- renderText({
     res <- chisq_result()
     if (is.null(res)) return("")
-    d <- if (input$chisq_mode == "inverse") {
-      val <- input$chisq_round_digits; if (is.null(val)||is.na(val)) 4L else as.integer(max(0L,min(10L,val)))
-    } else 4L
-    if (input$chisq_range == "above") {
-      paste0("Threshold: Above ", fmt_num(res$num1, digits = d))
+    if (input$chisq_mode == "chisq") {
+      if (input$chisq_range == "above") paste0("Threshold: Above ", input$chisq_num1)
+      else paste0("Threshold: Below ", input$chisq_num1)
     } else {
-      paste0("Threshold: Below ", fmt_num(res$num1, digits = d))
+      d <- { val <- input$chisq_round_digits; if (is.null(val)||is.na(val)) 4L else as.integer(max(0L,min(10L,val))) }
+      if (input$chisq_range == "above") paste0("Threshold: Above ", fmt_num(res$num1, digits = d))
+      else paste0("Threshold: Below ", fmt_num(res$num1, digits = d))
     }
   })
   
@@ -829,7 +836,7 @@ server <- function(input, output, session) {
     as.integer(max(0L, min(10L, val)))
   })
   
-  f_debounced_num1 <- debounce(reactive(input$f_num1), 300)
+  f_debounced_num1 <- debounce(reactive(input$f_num1), 2000)
   
   f_threshold <- reactiveValues(num1 = 2)
   f_threshold_locked_by_user <- reactiveVal(FALSE)
@@ -895,22 +902,24 @@ server <- function(input, output, session) {
   output$f_prob <- renderText({
     res <- f_result()
     if (is.null(res)) return("Invalid input.")
-    d <- if (input$f_mode == "f") {
-      val <- input$f_round_digits; if (is.null(val)||is.na(val)) 4L else as.integer(max(0L,min(10L,val)))
-    } else 4L
-    paste0("Probability = ", fmt_num(res$prob, digits = d))
+    if (input$f_mode == "inverse") {
+      paste0("Probability = ", input$f_prob_input)
+    } else {
+      d <- { val <- input$f_round_digits; if (is.null(val)||is.na(val)) 4L else as.integer(max(0L,min(10L,val))) }
+      paste0("Probability = ", fmt_num(res$prob, digits = d))
+    }
   })
   
   output$f_threshold_text <- renderText({
     res <- f_result()
     if (is.null(res)) return("")
-    d <- if (input$f_mode == "inverse") {
-      val <- input$f_round_digits; if (is.null(val)||is.na(val)) 4L else as.integer(max(0L,min(10L,val)))
-    } else 4L
-    if (input$f_range == "above") {
-      paste0("Threshold: Above ", fmt_num(res$num1, digits = d))
+    if (input$f_mode == "f") {
+      if (input$f_range == "above") paste0("Threshold: Above ", input$f_num1)
+      else paste0("Threshold: Below ", input$f_num1)
     } else {
-      paste0("Threshold: Below ", fmt_num(res$num1, digits = d))
+      d <- { val <- input$f_round_digits; if (is.null(val)||is.na(val)) 4L else as.integer(max(0L,min(10L,val))) }
+      if (input$f_range == "above") paste0("Threshold: Above ", fmt_num(res$num1, digits = d))
+      else paste0("Threshold: Below ", fmt_num(res$num1, digits = d))
     }
   })
   
