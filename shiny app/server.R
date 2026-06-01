@@ -34,7 +34,7 @@ server <- function(input, output, session) {
     k1_val <- min(binom_k_stored$k1, n)
     k2_val <- min(binom_k_stored$k2, n)
     
-    if (input$binom_range %in% c("between", "outside")) {
+    if (input$binom_range %in% c("between_inc", "between_exc", "outside_inc", "outside_exc")) {
       tagList(
         numericInput("binom_k1", "Lower value (k₁)", value = k1_val, min = 0, max = n, step = 1),
         numericInput("binom_k2", "Upper value (k₂)", value = k2_val, min = 0, max = n, step = 1)
@@ -62,15 +62,15 @@ server <- function(input, output, session) {
     k1 <- k2 <- NA
     
     if (mode == "inverse") {
-      if (range_type == "below") {
+      if (range_type %in% c("lt", "leq")) {
         k1 <- qbinom(prob_input, n, p)
-      } else if (range_type == "above") {
+      } else if (range_type %in% c("gt", "geq")) {
         k1 <- qbinom(1 - prob_input, n, p)
-      } else if (range_type == "between") {
+      } else if (range_type %in% c("between_inc", "between_exc")) {
         tail <- (1 - prob_input) / 2
         k1 <- qbinom(tail, n, p)
         k2 <- qbinom(1 - tail, n, p)
-      } else if (range_type == "outside") {
+      } else if (range_type %in% c("outside_inc", "outside_exc")) {
         tail <- prob_input / 2
         k1 <- qbinom(tail, n, p)
         k2 <- qbinom(1 - tail, n, p)
@@ -80,7 +80,7 @@ server <- function(input, output, session) {
       k2 <- if (!is.null(input$binom_k2)) as.integer(input$binom_k2) else NA
     }
     
-    if (range_type %in% c("between", "outside")) {
+    if (range_type %in% c("between_inc", "between_exc", "outside_inc", "outside_exc")) {
       validate(need(!is.na(k1) & !is.na(k2), "Please enter both values."))
       validate(need(k2 >= k1, "Upper value must be ≥ lower value."))
     } else {
@@ -88,23 +88,15 @@ server <- function(input, output, session) {
     }
     
     prob <- switch(range_type,
-                   "below" = pbinom(k1, n, p),
-                   
-                   "above" = pbinom(k1 - 1, n, p, lower.tail = FALSE),
-                   
-                   "exactly" = dbinom(k1, n, p),
-                   
-                   "between" = {
-                     log_val <- pbinom(k2, n, p, log.p = TRUE) +
-                       log1p(-exp(pbinom(k1 - 1, n, p, log.p = TRUE) -
-                                    pbinom(k2, n, p, log.p = TRUE)))
-                     exp(log_val)
-                   },
-                   
-                   "outside" = {
-                     inside <- pbinom(k2, n, p) - pbinom(k1 - 1, n, p)
-                     1 - inside
-                   }
+                   "exactly"     = dbinom(k1, n, p),
+                   "lt"          = pbinom(k1 - 1, n, p),
+                   "leq"         = pbinom(k1, n, p),
+                   "gt"          = pbinom(k1, n, p, lower.tail = FALSE),
+                   "geq"         = pbinom(k1 - 1, n, p, lower.tail = FALSE),
+                   "between_inc" = pbinom(k2, n, p) - pbinom(k1 - 1, n, p),
+                   "between_exc" = pbinom(k2 - 1, n, p) - pbinom(k1, n, p),
+                   "outside_inc" = 1 - (pbinom(k2 - 1, n, p) - pbinom(k1, n, p)),
+                   "outside_exc" = 1 - (pbinom(k2, n, p) - pbinom(k1 - 1, n, p))
     )
     
     
@@ -137,51 +129,38 @@ server <- function(input, output, session) {
     
     bar_col <- rep("lightgrey", length(x_display))
     
-    if (range_type == "below") {
-      
-      if (k1 < lower) {
-
-      } else if (k1 > upper) {
-        bar_col[] <- "#2774AE"
-        
-      } else {
-        bar_col[x_display <= k1] <- "#2774AE"
-      }
-      
-    } else if (range_type == "above") {
-      
-      if (k1 > upper) {
-
-      } else if (k1 < lower) {
-        bar_col[] <- "#2774AE"
-        
-      } else {
-        bar_col[x_display >= k1] <- "#2774AE"
-      }
-      
-    } else if (range_type == "exactly") {
-      
-      if (k1 >= lower && k1 <= upper) {
-        bar_col[x_display == k1] <- "#2774AE"
-      }
-      
-    } else if (range_type == "between") {
-      
-      if (k2 < lower || k1 > upper) {
-
-      } else {
-        bar_col[x_display >= max(k1, lower) & x_display <= min(k2, upper)] <- "#2774AE"
-      }
-      
-    } else if (range_type == "outside") {
-      
-      if (k2 < lower || k1 > upper) {
-        bar_col[] <- "#2774AE"
-        
-      } else {
-        bar_col[x_display < k1 | x_display > k2] <- "#2774AE"
-      }
+    if (range_type == "exactly") {
+      if (k1 >= lower && k1 <= upper) bar_col[x_display == k1] <- "#2774AE"
+    } else if (range_type == "lt") {
+      if (k1 <= lower) { # nothing visible
+      } else if (k1 > upper) { bar_col[] <- "#2774AE"
+      } else { bar_col[x_display < k1] <- "#2774AE" }
+    } else if (range_type == "leq") {
+      if (k1 < lower) { # nothing visible
+      } else if (k1 > upper) { bar_col[] <- "#2774AE"
+      } else { bar_col[x_display <= k1] <- "#2774AE" }
+    } else if (range_type == "gt") {
+      if (k1 >= upper) { # nothing visible
+      } else if (k1 < lower) { bar_col[] <- "#2774AE"
+      } else { bar_col[x_display > k1] <- "#2774AE" }
+    } else if (range_type == "geq") {
+      if (k1 > upper) { # nothing visible
+      } else if (k1 < lower) { bar_col[] <- "#2774AE"
+      } else { bar_col[x_display >= k1] <- "#2774AE" }
+    } else if (range_type == "between_inc") {
+      if (k2 < lower || k1 > upper) { # nothing visible
+      } else { bar_col[x_display >= max(k1, lower) & x_display <= min(k2, upper)] <- "#2774AE" }
+    } else if (range_type == "between_exc") {
+      if (k2 <= lower || k1 >= upper) { # nothing visible
+      } else { bar_col[x_display > max(k1, lower - 1) & x_display < min(k2, upper + 1)] <- "#2774AE" }
+    } else if (range_type == "outside_inc") {
+      if (k2 < lower || k1 > upper) { bar_col[] <- "#2774AE"
+      } else { bar_col[x_display <= k1 | x_display >= k2] <- "#2774AE" }
+    } else if (range_type == "outside_exc") {
+      if (k2 < lower || k1 > upper) { bar_col[] <- "#2774AE"
+      } else { bar_col[x_display < k1 | x_display > k2] <- "#2774AE" }
     }
+    
     df_plot <- data.frame(x = x_display, prob = probs, color = bar_col)
     
     ggplot(df_plot, aes(x = x, y = prob, fill = color)) +
@@ -206,13 +185,29 @@ server <- function(input, output, session) {
   output$binom_prob <- renderText({
     res <- binom_result()
     if (is.null(res)) return("")
-    d <- if (input$binom_mode == "binom") {
-      val <- input$binom_round_digits; if (is.null(val)||is.na(val)) 4L else as.integer(max(0L,min(10L,val)))
-    } else 4L
-    paste0("Probability = ", fmt_num(res$prob, digits = d))
+    if (input$binom_mode == "inverse") {
+      paste0("Probability = ", input$binom_prob_input)
+    } else {
+      d <- { val <- input$binom_round_digits; if (is.null(val)||is.na(val)) 4L else as.integer(max(0L,min(10L,val))) }
+      paste0("Probability = ", fmt_num(res$prob, digits = d))
+    }
   })
   
-  
+  output$binom_range_text <- renderText({
+    res <- binom_result()
+    if (is.null(res)) return("")
+    switch(input$binom_range,
+           "exactly"     = paste0("P(X = ", res$k1, ")"),
+           "lt"          = paste0("P(X < ", res$k1, ")"),
+           "leq"         = paste0("P(X ≤ ", res$k1, ")"),
+           "gt"          = paste0("P(X > ", res$k1, ")"),
+           "geq"         = paste0("P(X ≥ ", res$k1, ")"),
+           "between_inc" = paste0("P(", res$k1, " ≤ X ≤ ", res$k2, ")"),
+           "between_exc" = paste0("P(", res$k1, " < X < ", res$k2, ")"),
+           "outside_inc" = paste0("P(X ≤ ", res$k1, " or X ≥ ", res$k2, ")"),
+           "outside_exc" = paste0("P(X < ", res$k1, " or X > ", res$k2, ")")
+    )
+  })
   
   
   # ======================================================================

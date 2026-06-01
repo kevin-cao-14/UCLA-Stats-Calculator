@@ -65,12 +65,17 @@ ui <- fluidPage(
           numericInput("binom_n", "Number of trials (n)", value = 20, min = 1, step = 1),
           numericInput("binom_p", "Probability of success (p)", value = 0.5, min = 0, max = 1, step = 0.01),
           
-          radioButtons("binom_range", "Select Range:",
-                       choices = c("Above"   = "above",
-                                   "Below"   = "below",
-                                   "Between" = "between",
-                                   "Outside" = "outside"),
-                       selected = "below"),
+          selectInput("binom_range", "Select Range:",
+                      choices = c("= (exactly)"                    = "exactly",
+                                  "< (less than)"                  = "lt",
+                                  "≤ (less than or equal)"         = "leq",
+                                  "> (greater than)"               = "gt",
+                                  "≥ (greater than or equal)"      = "geq",
+                                  "Between (inclusive)"            = "between_inc",
+                                  "Between (exclusive)"            = "between_exc",
+                                  "Outside (inclusive)"            = "outside_inc",
+                                  "Outside (exclusive)"            = "outside_exc"),
+                      selected = "leq"),
           
           # Distribution mode: show threshold input(s)
           conditionalPanel(
@@ -107,9 +112,10 @@ ui <- fluidPage(
        
         mainPanel(
           div(style = "margin-top: 20px;",
-              plotOutput("binom_plot")
+              plotOutput("binom_plot", height = "400px")
           ),
           textOutput("binom_prob"),
+          textOutput("binom_range_text")
         )
       )
     ),
@@ -149,11 +155,6 @@ ui <- fluidPage(
           conditionalPanel(
             condition = "input.mode == 'inverse' && (input.range == 'between' || input.range == 'outside')",
             numericInput("prob_input", "Desired Probability", value = 0.95, step = 0.01)
-          ),
-          
-          conditionalPanel(
-            condition = "input.mode == 'inverse' && input.range != 'between' && input.range != 'outside'",
-            numericInput("prob_input", "Probability", value = 0.95, step = 0.01)
           ),
           
           # Rounding control 
