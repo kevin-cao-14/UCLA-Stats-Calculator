@@ -533,7 +533,10 @@ ui <- fluidPage(
           ),
           
           ## numeric inputs
-          numericInput("mean_mu0", "Hypothesized mean (μ₀)", value = 0),
+          conditionalPanel(
+            condition = "input.mean_show_test == true",
+            numericInput("mean_mu0", "Hypothesized mean (μ₀)", value = 0)
+          ),
           numericInput("mean_n", "Sample size (n)", value = 30, step = 1),
           numericInput("mean_xbar", "Sample mean(x̄)", value = .10),
           numericInput("mean_s", "Sample SD (s)", value = 1),
